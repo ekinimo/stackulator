@@ -1,20 +1,24 @@
+use std::{sync::Arc, fmt::format};
 
-use std::sync::Arc;
-
+use crate::language::repr::Representation;
 use iced::{
+    event::listen_with,
     executor,
-    widget::{
-        self, column, row, scrollable, text,
-        text_editor::{self, Content},
-        vertical_rule, vertical_space, container, horizontal_space,
+    keyboard::{
+        self,
+        key::{self, Named},
+        Key, Modifiers,
     },
-    Application, Command, Font, Settings, Theme,
+    widget::{
+        self, column, container, horizontal_space, row, scrollable, text,
+        text_editor::{self, Content},
+        vertical_rule, vertical_space, horizontal_rule,
+    },
+    Application, Command, Event, Font, Settings, Theme,
 };
 use language::vm::VM;
-use crate::language::repr::Representation;
 
 mod language;
-
 
 #[derive(Default)]
 struct App {
@@ -29,6 +33,9 @@ struct App {
 #[derive(Debug, Clone)]
 enum Message {
     Edit(text_editor::Action),
+    Evaluate,
+    HistoryBack,
+    HistoryForward,
 }
 impl Application for App {
     type Executor = executor::Default;
@@ -52,7 +59,7 @@ impl Application for App {
 
     fn update(&mut self, message: Self::Message) -> iced::Command<Self::Message> {
         match message {
-            Message::Edit(text_editor::Action::Move(text_editor::Motion::PageUp)) => {
+            Message::HistoryForward => {
                 let idx;
                 (self.history_idx, idx) = match self.history_idx {
                     Some(i) => {
@@ -73,8 +80,9 @@ impl Application for App {
                     .perform(text_editor::Action::Edit(text_editor::Edit::Paste(
                         prog.to_owned(),
                     )));
+                Command::none()
             }
-            Message::Edit(text_editor::Action::Move(text_editor::Motion::PageDown)) => {
+            Message::HistoryBack => {
                 let idx;
                 (self.history_idx, idx) = match self.history_idx {
                     Some(i) => {
@@ -99,8 +107,9 @@ impl Application for App {
                     .perform(text_editor::Action::Edit(text_editor::Edit::Paste(
                         prog.to_owned(),
                     )));
+                Command::none()
             }
-            Message::Edit(text_editor::Action::Edit(text_editor::Edit::Enter)) => {
+            Message::Evaluate => {
                 if self.has_err {
                     self.err
                         .perform(text_editor::Action::Move(text_editor::Motion::DocumentEnd));
@@ -114,9 +123,10 @@ impl Application for App {
                 self.history_idx = None;
 
                 let prog = self.content.text();
-                let parse_result = self.vm.parse_snippet(&prog);
-                match parse_result {
-                    Ok(_) => {
+                let parse_snippet_result = self.vm.parse_snippet(&prog);
+                let parse_program_result = self.vm.parse_full_program(&prog);
+                match (parse_snippet_result,parse_program_result) {
+                    (Ok(_), _) | (_,Ok(_))  => {
                         let old_stack = self.vm.stack.clone();
                         match self.vm.eval() {
                             Ok(_) => (),
@@ -140,65 +150,94 @@ impl Application for App {
                         self.content
                             .perform(text_editor::Action::Edit(text_editor::Edit::Delete));
                     }
-                    Err(err) => {
+                    (Err(err1),Err(err2)) => {
                         self.has_err = true;
-                        let path = err.path().unwrap_or("");
-                        let line = err.line();
-                        let err = err.to_string();
-                        println!("path:\n{}\n line :\n {}\nerr :\n {}",&path,line ,&err,);
+                        let err = (err1.to_string(),err2.to_string(),);
+                        println!("nerr :\n {} \n or \n {},",&err.0,&err.1,);
                         self.err
                             .perform(text_editor::Action::Edit(text_editor::Edit::Paste(
-                                Arc::new(err),
-                            )));
+                                Arc::new(format!("{}\n-*-*-*-*-*-*-*-*-*-*-*-*-*-* Or -*-*-*-*-*-*-*-*-*-*-*-*-*-*\n{},",&err.0,&err.1)
+                               )),
+                            ));
                     }
                 }
+                Command::none()
                 //self.content.perform(action);
             }
             Message::Edit(action) => {
-                dbg!(&action);
-                self.history_idx = None;
+                //dbg!(&action);
+                //self.history_idx = None;
                 self.content.perform(action);
+                Command::none()
             }
         }
-        Command::none()
     }
 
+    fn subscription(&self) -> iced::Subscription<Self::Message> {
+        listen_with(|event, _| match event {
+            Event::Keyboard(keyboard::Event::KeyPressed { key, modifiers, .. })
+                if modifiers.control() =>
+            {
+                match key {
+                    Key::Named(Named::Enter) => Some(Message::Evaluate),
+                    Key::Named(Named::ArrowUp) => Some(Message::HistoryBack),
+                    Key::Named(Named::ArrowDown) => Some(Message::HistoryForward),
+                    _ => None,
+                }
+            }
+            Event::Keyboard(keyboard::Event::KeyPressed {
+                key: Key::Named(Named::F4),
+                ..
+            }) => Some(Message::Evaluate),
+            _ => None,
+        })
+    }
     fn view(&self) -> iced::Element<'_, Self::Message, Self::Theme, iced::Renderer> {
-        let input = if self.has_err {
+        let input = container(if self.has_err {
             row!(
+                container(
                 iced::widget::text_editor(&self.content)
                     .on_action(Message::Edit)
                     .padding(10)
-                    .font(Font::MONOSPACE),
-                iced::widget::text_editor(&self.err)
+                    .font(Font::MONOSPACE) ),
+                container(iced::widget::text_editor(&self.err)
                     .padding(10)
-                    .font(Font::MONOSPACE),
+                    .font(Font::MONOSPACE)),
             )
         } else {
-            row!(iced::widget::text_editor(&self.content)
+            row!(container(iced::widget::text_editor(&self.content)
                 .on_action(Message::Edit)
-                .padding(10))
-        };
+                .padding(10)))
+        });
 
-        let value_stack = scrollable(
-            widget::column(self.vm.stack.iter().map(|val| {
-                container(text(val.get_repr(&self.vm.parse_ctx))).padding(10).into()
+        let value_stack = container(scrollable(
+            widget::column(self.vm.stack.iter().rev().map(|val| {
+                scrollable( container(text(val.get_repr(&self.vm.parse_ctx)))
+                    .padding(10))
+                    .into()
             }))
             .align_items(iced::Alignment::Center),
-        );
-        let definitions = scrollable(widget::column(self.vm.get_definitons().iter().map(
+        ));
+        let definitions = container(scrollable(widget::column(self.vm.get_definitons().iter().map(
             |(name, body)| {
                 row!(
-                    text(name),
-                    text(" = "),
-                    widget::column(body.iter().map(|x| text(x).into()))
-                )
+                    container(text(name)),
+                    container(text(" = ")),
+                    scrollable( widget::column(body.iter().map(|x| container(text(x)).padding(10).into()))
+                ))
                 .into()
             },
-        )));
+        ))));
         column![
-            row![horizontal_space() , value_stack, vertical_rule(30), definitions],
-            vertical_space(),
+            row![
+                horizontal_space(),
+                value_stack,
+                vertical_rule(30),
+                definitions,
+                horizontal_space(),
+
+            ],
+            horizontal_rule(30),
             input,
         ]
         .into()
@@ -209,5 +248,3 @@ fn main() -> iced::Result {
     App::run(Settings::default())?;
     return Ok(());
 }
-
-
