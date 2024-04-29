@@ -1,8 +1,7 @@
-
-use malachite::{Integer, Rational};
 use super::stack::Stack;
-use crate::language::eval::{Eval,EvalError,ChainMap,Values};
 use crate::language::env::Env;
+use crate::language::eval::{ChainMap, Eval, EvalError, Values};
+use malachite::{Integer, Rational};
 
 #[derive(Debug, Clone)]
 pub enum Pattern {
@@ -12,7 +11,6 @@ pub enum Pattern {
     Bool(bool),
     Variable(usize),
 }
-
 
 #[derive(Debug, Clone, Default)]
 pub struct MatchElem {
@@ -24,9 +22,6 @@ pub struct MatchElem {
 pub struct Match {
     elems: Vec<MatchElem>,
 }
-
-
-
 
 impl Eval<bool> for MatchElem {
     fn eval(
@@ -84,9 +79,6 @@ impl Eval<bool> for MatchElem {
     }
 }
 
-
-
-
 impl Eval<()> for Match {
     fn eval(
         &self,
@@ -113,17 +105,16 @@ impl Eval<()> for Match {
             }
         }
 
-        return Err(EvalError::NoMatch);
+        Err(EvalError::NoMatch)
     }
 }
 
-
 use crate::language::ast::Ast;
+use crate::language::parse::{Parse, ParseCtx, Rule};
 use std::str::FromStr;
-use crate::language::parse::{Parse,Rule,ParseCtx};
 
-impl Parse for Pattern{
-    fn parse<'a>(pairs: pest::iterators::Pair<'a, Rule>, ctx: &mut ParseCtx) -> Self{
+impl Parse for Pattern {
+    fn parse(pairs: pest::iterators::Pair<'_, Rule>, ctx: &mut ParseCtx) -> Self {
         match pairs.as_rule() {
             Rule::integer => Pattern::Int(Integer::from_str(pairs.as_str()).unwrap()),
             Rule::float => Pattern::Float(Rational::from_str(pairs.as_str()).unwrap()),
@@ -132,12 +123,11 @@ impl Parse for Pattern{
             Rule::dontCare => Pattern::DontCare,
             _ => unreachable!(),
         }
-
     }
 }
 
-impl Parse for MatchElem{
-    fn parse<'a>(pairs: pest::iterators::Pair<'a, Rule>, ctx: &mut ParseCtx) -> Self{
+impl Parse for MatchElem {
+    fn parse(pairs: pest::iterators::Pair<'_, Rule>, ctx: &mut ParseCtx) -> Self {
         let mut inners = pairs.into_inner();
         let pattern: Vec<Pattern> = inners
             .next()
@@ -162,7 +152,7 @@ impl Parse for MatchElem{
                 body,
             }
         } else {
-            let condition = vec![] ;
+            let condition = vec![];
             let body = Stack {
                 elems: cond_or_action
                     .into_inner()
@@ -171,17 +161,17 @@ impl Parse for MatchElem{
             };
             MatchElem {
                 pattern,
-                cond : Stack { elems: (condition.into_iter().collect()) },
+                cond: Stack {
+                    elems: (condition.into_iter().collect()),
+                },
                 body,
             }
         }
-        
     }
 }
 
-
-impl Parse for Match{
-    fn parse<'a>(pairs: pest::iterators::Pair<'a, Rule>, ctx: &mut ParseCtx) -> Self{
+impl Parse for Match {
+    fn parse(pairs: pest::iterators::Pair<'_, Rule>, ctx: &mut ParseCtx) -> Self {
         Match {
             elems: pairs
                 .into_inner()
@@ -189,9 +179,7 @@ impl Parse for Match{
                 .collect(),
         }
     }
-        
-    }
-
+}
 
 use crate::language::repr::Representation;
 impl Representation<(), ParseCtx> for Pattern {

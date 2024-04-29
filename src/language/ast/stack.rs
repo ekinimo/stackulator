@@ -1,21 +1,20 @@
 use super::Ast;
-use std::sync::Arc;
-use crate::language::eval::{Eval,EvalError,ChainMap,Values};
-use crate::language::parse::{Parse,Rule,ParseCtx};
 use crate::language::env::Env;
+use crate::language::eval::{ChainMap, Eval, EvalError, Values};
+use crate::language::parse::{Parse, ParseCtx, Rule};
+use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct Stack {
     pub elems: Arc<[Ast]>,
 }
 
-impl Default for Stack{
+impl Default for Stack {
     fn default() -> Self {
         let elems = vec![].into();
-        Self { elems  }
+        Self { elems }
     }
 }
-
 
 impl Eval<()> for Stack {
     fn eval(
@@ -34,12 +33,12 @@ impl Eval<()> for Stack {
                 Ast::Call(fun_name) => {
                     let name = env.data.get(fun_name);
                     match name {
-                        Some(func) => match func.eval(values, env, vars) {
-                            Err(err) => {
-                                return Err(EvalError::FuncCallFail(Box::new((*fun_name, err))))
+                        Some(func) => {
+                            if let Err(err) = func.eval(values, env, vars) {
+                                return Err(EvalError::FuncCallFail(Box::new((*fun_name, err))));
                             }
-                            Ok(_) => {}
-                        },
+                        }
+
                         None => return Err(EvalError::UndefinedCall(*fun_name)),
                     }
                 }
@@ -58,9 +57,8 @@ impl Eval<()> for Stack {
     }
 }
 
-
-impl Parse for Stack{
-    fn parse<'a>(pairs: pest::iterators::Pair<'a, Rule>, ctx: &mut ParseCtx) -> Self{
+impl Parse for Stack {
+    fn parse(pairs: pest::iterators::Pair<'_, Rule>, ctx: &mut ParseCtx) -> Self {
         Self {
             elems: pairs
                 .into_inner()

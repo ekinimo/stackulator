@@ -1,15 +1,11 @@
-
 use malachite::{Integer, Rational};
 
-
-pub mod while_block;
+pub mod iftrue;
 pub mod match_block;
+pub mod primitives;
 pub mod stack;
 pub mod take;
-pub mod primitives;
-pub mod iftrue;
-
-
+pub mod while_block;
 
 #[derive(Debug, Clone)]
 pub enum Ast {
@@ -26,19 +22,18 @@ pub enum Ast {
     Bool(bool),
 }
 
-use std::str::FromStr;
-use crate::language::parse::{Parse,Rule,ParseCtx};
-use crate::language::ast::primitives::Primitives;
-use crate::language::ast::take::Take;
-use crate::language::ast::while_block::While;
-use crate::language::ast::stack::Stack;
 use crate::language::ast::iftrue::IfTrue;
 use crate::language::ast::match_block::Match;
+use crate::language::ast::primitives::Primitives;
+use crate::language::ast::stack::Stack;
+use crate::language::ast::take::Take;
+use crate::language::ast::while_block::While;
+use crate::language::parse::{Parse, ParseCtx, Rule};
+use std::str::FromStr;
 
-
-impl Parse for Ast{
-    fn parse<'a>(pairs: pest::iterators::Pair<'a, Rule>, ctx: &mut ParseCtx) -> Self{
-             match pairs.as_rule() {
+impl Parse for Ast {
+    fn parse(pairs: pest::iterators::Pair<'_, Rule>, ctx: &mut ParseCtx) -> Self {
+        match pairs.as_rule() {
             Rule::integer => Ast::Int(Integer::from_str(pairs.as_str()).unwrap()),
             Rule::float => Ast::Float(Rational::from_str(pairs.as_str()).unwrap()),
             Rule::bools => Ast::Bool("true" == pairs.as_str()),
@@ -73,7 +68,6 @@ impl Parse for Ast{
 
             _ => unreachable!(),
         }
-
     }
 }
 

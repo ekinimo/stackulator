@@ -1,6 +1,6 @@
 use super::stack::Stack;
-use crate::language::eval::{Eval,EvalError,ChainMap,Values};
 use crate::language::env::Env;
+use crate::language::eval::{ChainMap, Eval, EvalError, Values};
 #[derive(Debug, Clone, Default)]
 pub struct While {
     cond: Stack,
@@ -42,10 +42,10 @@ impl Eval<()> for While {
 use crate::language::ast::Ast;
 use std::sync::Arc;
 
-use crate::language::parse::{Parse,Rule,ParseCtx};
+use crate::language::parse::{Parse, ParseCtx, Rule};
 
-impl Parse for While{
-    fn parse<'a>(pairs: pest::iterators::Pair<'a, Rule>, ctx: &mut ParseCtx) -> Self{
+impl Parse for While {
+    fn parse(pairs: pest::iterators::Pair<'_, Rule>, ctx: &mut ParseCtx) -> Self {
         let mut inners = pairs.into_inner();
         let vars = inners.next().unwrap();
         let cond = match vars.as_rule() {
@@ -69,7 +69,6 @@ impl Parse for While{
             _ => unreachable!(),
         };
         While { cond, body }
-        
     }
 }
 

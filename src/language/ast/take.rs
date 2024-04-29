@@ -1,13 +1,12 @@
 use super::stack::Stack;
-use crate::language::eval::{Eval,EvalError,ChainMap,Values};
 use crate::language::env::Env;
+use crate::language::eval::{ChainMap, Eval, EvalError, Values};
 
 #[derive(Debug, Clone, Default)]
 pub struct Take {
     vars: Vec<usize>,
     body: Stack,
 }
-
 
 impl Eval<()> for Take {
     fn eval(
@@ -33,18 +32,17 @@ impl Eval<()> for Take {
             }
         }
         vars.pop();
-        return Ok(());
+        Ok(())
     }
 }
-
 
 use crate::language::ast::Ast;
 use std::sync::Arc;
 
-use crate::language::parse::{Parse,Rule,ParseCtx};
+use crate::language::parse::{Parse, ParseCtx, Rule};
 
-impl Parse for Take{
-    fn parse<'a>(pairs: pest::iterators::Pair<'a, Rule>, ctx: &mut ParseCtx) -> Self{
+impl Parse for Take {
+    fn parse(pairs: pest::iterators::Pair<'_, Rule>, ctx: &mut ParseCtx) -> Self {
         let mut inners = pairs.into_inner();
         let vars = inners.next().unwrap();
         let vars = match vars.as_rule() {
@@ -66,7 +64,6 @@ impl Parse for Take{
             _ => unreachable!(),
         };
         Take { vars, body }
-
     }
 }
 
@@ -76,9 +73,9 @@ impl Representation<(), ParseCtx> for Take {
         let mut result = String::new();
         result.push('|');
         self.vars.iter().for_each(|x| {
-            result.push_str(" ");
+            result.push(' ');
             result.push_str(&context.lookup_var_name(*x));
-            result.push_str(" ");
+            result.push(' ');
         });
 
         result.push('|');

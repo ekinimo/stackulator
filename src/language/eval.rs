@@ -41,7 +41,6 @@ pub enum Values {
     Stack(super::ast::stack::Stack),
 }
 
-
 #[derive(Clone, Debug)]
 pub struct ChainMap {
     data: Vec<HashMap<usize, Values>>,
@@ -72,8 +71,8 @@ impl ChainMap {
     }
     pub fn lookup(&mut self, var: &usize) -> Option<Values> {
         for map in self.data.iter().rev() {
-            if map.contains_key(&var) {
-                return map.get(var).map(|x| x.clone());
+            if map.contains_key(var) {
+                return map.get(var).cloned();
             }
         }
         None
@@ -114,7 +113,6 @@ impl Representation<(), ParseCtx> for EvalError {
                 format!("WhileCondExpectsBoolButGot {}", x.get_repr(context))
             }
             EvalError::WhileCondFail(x) => {
-                let x = &*x;
                 format!("WhileCondFail {}", x.get_repr(context))
             }
             EvalError::WhileBodyFail(x) => {
@@ -141,15 +139,15 @@ impl Representation<(), ParseCtx> for EvalError {
             EvalError::MatchCondExpectsBoolButGot(x) => {
                 format!("MatchCondExpectsBoolButGot {}", x.get_repr(context))
             }
-            EvalError::MatchCondUnderFlow => format!("MatchCondUnderFlow"),
-            EvalError::PrimitiveUnderflow => format!("PrimitiveUnderflow"),
-            EvalError::PrimitiveTypeErr => format!("PrimitiveTypeErr"),
-            EvalError::PrimitiveEvalErr => format!("PrimitiveEvalErr"),
-            EvalError::IfCondUnderFlow => format!("IfCondUnderFlow"),
-            EvalError::NoMatch => format!("NoMatch"),
-            EvalError::MatchPatternUnderflow => format!("MatchPatternUnderflow"),
-            EvalError::WhileCondUnderFlow => format!("WhileCondUnderFlow"),
-            EvalError::TakeUnderflow => format!("TakeUnderflow"),
+            EvalError::MatchCondUnderFlow => "MatchCondUnderFlow".to_string(),
+            EvalError::PrimitiveUnderflow => "PrimitiveUnderflow".to_string(),
+            EvalError::PrimitiveTypeErr => "PrimitiveTypeErr".to_string(),
+            EvalError::PrimitiveEvalErr => "PrimitiveEvalErr".to_string(),
+            EvalError::IfCondUnderFlow => "IfCondUnderFlow".to_string(),
+            EvalError::NoMatch => "NoMatch".to_string(),
+            EvalError::MatchPatternUnderflow => "MatchPatternUnderflow".to_string(),
+            EvalError::WhileCondUnderFlow => "WhileCondUnderFlow".to_string(),
+            EvalError::TakeUnderflow => "TakeUnderflow".to_string(),
         }
     }
 }

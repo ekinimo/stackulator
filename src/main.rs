@@ -1,18 +1,14 @@
-use std::{sync::Arc, fmt::format};
+use std::sync::Arc;
 
 use crate::language::repr::Representation;
 use iced::{
     event::listen_with,
     executor,
-    keyboard::{
-        self,
-        key::{self, Named},
-        Key, Modifiers,
-    },
+    keyboard::{self, key::Named, Key},
     widget::{
-        self, column, container, horizontal_space, row, scrollable, text,
+        self, column, container, horizontal_rule, horizontal_space, row, scrollable, text,
         text_editor::{self, Content},
-        vertical_rule, vertical_space, horizontal_rule,
+        vertical_rule,
     },
     Application, Command, Event, Font, Settings, Theme,
 };
@@ -125,8 +121,8 @@ impl Application for App {
                 let prog = self.content.text();
                 let parse_snippet_result = self.vm.parse_snippet(&prog);
                 let parse_program_result = self.vm.parse_full_program(&prog);
-                match (parse_snippet_result,parse_program_result) {
-                    (Ok(_), _) | (_,Ok(_))  => {
+                match (parse_snippet_result, parse_program_result) {
+                    (Ok(_), _) | (_, Ok(_)) => {
                         let old_stack = self.vm.stack.clone();
                         match self.vm.eval() {
                             Ok(_) => (),
@@ -150,10 +146,10 @@ impl Application for App {
                         self.content
                             .perform(text_editor::Action::Edit(text_editor::Edit::Delete));
                     }
-                    (Err(err1),Err(err2)) => {
+                    (Err(err1), Err(err2)) => {
                         self.has_err = true;
-                        let err = (err1.to_string(),err2.to_string(),);
-                        println!("nerr :\n {} \n or \n {},",&err.0,&err.1,);
+                        let err = (err1.to_string(), err2.to_string());
+                        println!("nerr :\n {} \n or \n {},", &err.0, &err.1,);
                         self.err
                             .perform(text_editor::Action::Edit(text_editor::Edit::Paste(
                                 Arc::new(format!("{}\n-*-*-*-*-*-*-*-*-*-*-*-*-*-* Or -*-*-*-*-*-*-*-*-*-*-*-*-*-*\n{},",&err.0,&err.1)
@@ -196,38 +192,43 @@ impl Application for App {
         let input = container(if self.has_err {
             row!(
                 container(
+                    iced::widget::text_editor(&self.content)
+                        .on_action(Message::Edit)
+                        .padding(10)
+                        .font(Font::MONOSPACE)
+                ),
+                container(
+                    iced::widget::text_editor(&self.err)
+                        .padding(10)
+                        .font(Font::MONOSPACE)
+                ),
+            )
+        } else {
+            row!(container(
                 iced::widget::text_editor(&self.content)
                     .on_action(Message::Edit)
                     .padding(10)
-                    .font(Font::MONOSPACE) ),
-                container(iced::widget::text_editor(&self.err)
-                    .padding(10)
-                    .font(Font::MONOSPACE)),
-            )
-        } else {
-            row!(container(iced::widget::text_editor(&self.content)
-                .on_action(Message::Edit)
-                .padding(10)))
+            ))
         });
 
         let value_stack = container(scrollable(
             widget::column(self.vm.stack.iter().rev().map(|val| {
-                scrollable( container(text(val.get_repr(&self.vm.parse_ctx)))
-                    .padding(10))
-                    .into()
+                scrollable(container(text(val.get_repr(&self.vm.parse_ctx))).padding(10)).into()
             }))
             .align_items(iced::Alignment::Center),
         ));
-        let definitions = container(scrollable(widget::column(self.vm.get_definitons().iter().map(
-            |(name, body)| {
+        let definitions = container(scrollable(widget::column(
+            self.vm.get_definitons().iter().map(|(name, body)| {
                 row!(
                     container(text(name)),
                     container(text(" = ")),
-                    scrollable( widget::column(body.iter().map(|x| container(text(x)).padding(10).into()))
-                ))
+                    scrollable(widget::column(
+                        body.iter().map(|x| container(text(x)).padding(10).into())
+                    ))
+                )
                 .into()
-            },
-        ))));
+            }),
+        )));
         column![
             row![
                 horizontal_space(),
@@ -235,7 +236,6 @@ impl Application for App {
                 vertical_rule(30),
                 definitions,
                 horizontal_space(),
-
             ],
             horizontal_rule(30),
             input,
@@ -246,5 +246,5 @@ impl Application for App {
 
 fn main() -> iced::Result {
     App::run(Settings::default())?;
-    return Ok(());
+    Ok(())
 }

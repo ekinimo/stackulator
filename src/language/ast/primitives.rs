@@ -1,8 +1,6 @@
-use crate::language::eval::{Eval,EvalError,ChainMap,Values};
 use crate::language::env::Env;
-use malachite::num::arithmetic::traits::{*};
-
-
+use crate::language::eval::{ChainMap, Eval, EvalError, Values};
+use malachite::num::arithmetic::traits::*;
 
 #[derive(Debug, Clone)]
 pub enum Primitives {
@@ -22,7 +20,6 @@ pub enum Primitives {
     IntToFloat,
     FloatToInt,
 }
-
 
 impl Eval<()> for Primitives {
     fn eval(
@@ -180,7 +177,7 @@ impl Eval<()> for Primitives {
             }
 
             Primitives::Not => {
-                if values.len() < 1 {
+                if values.is_empty() {
                     return Err(EvalError::PrimitiveUnderflow);
                 }
                 let a = values.pop().unwrap();
@@ -192,32 +189,30 @@ impl Eval<()> for Primitives {
                 Ok(())
             }
             Primitives::IntToFloat => {
-                if values.len() < 1 {
+                if values.is_empty() {
                     return Err(EvalError::PrimitiveUnderflow);
                 }
                 let a = values.pop().unwrap();
                 match a {
-                    Values::Int(a) => values.push(Values::Float(a.into() )),
+                    Values::Int(a) => values.push(Values::Float(a.into())),
                     _ => return Err(EvalError::PrimitiveTypeErr),
                 }
                 Ok(())
             }
 
             Primitives::FloatToInt => {
-                if values.len() < 1 {
+                if values.is_empty() {
                     return Err(EvalError::PrimitiveUnderflow);
                 }
                 let a = values.pop().unwrap();
                 match a {
-                    Values::Float(a) => values.push(Values::Int(
-                        a.ceiling().into()
-                        )),
+                    Values::Float(a) => values.push(Values::Int(a.ceiling())),
                     _ => return Err(EvalError::PrimitiveTypeErr),
                 }
                 Ok(())
             }
             Primitives::Eval => {
-                if values.len() < 1 {
+                if values.is_empty() {
                     return Err(EvalError::PrimitiveUnderflow);
                 }
                 if let Values::Stack(stack) = values.pop().unwrap() {
@@ -237,9 +232,8 @@ impl Eval<()> for Primitives {
     }
 }
 
-
-use crate::language::repr::Representation;
 use crate::language::parse::ParseCtx;
+use crate::language::repr::Representation;
 impl Representation<(), ParseCtx> for Primitives {
     fn get_repr(&self, _context: &ParseCtx) -> String {
         match self {

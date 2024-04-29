@@ -8,9 +8,6 @@ pub struct ParseCtx {
     fun_idx: HashMap<String, usize>,
 }
 
-
-
-
 impl ParseCtx {
     pub fn insert_var(&mut self, var: impl Into<String> + Clone) -> usize {
         match self.var_idx.entry(var.clone().into()) {
@@ -50,7 +47,6 @@ use pest_derive::Parser;
 #[grammar = "grammar.pest"]
 pub struct StackParser;
 
-pub trait Parse{
-    
-    fn parse<'a>(pairs: pest::iterators::Pair<'a, Rule>, ctx: &mut ParseCtx) -> Self;
+pub trait Parse {
+    fn parse(pairs: pest::iterators::Pair<'_, Rule>, ctx: &mut ParseCtx) -> Self;
 }
