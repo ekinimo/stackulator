@@ -1,25 +1,25 @@
 use crate::language::ast::stack::Stack;
 use crate::language::env::Env;
-use crate::language::eval::{ChainMap, Eval, EvalError, Values};
+use crate::language::eval::{ChainMap, Eval, EvalError, Values,Flow};
 
 #[derive(Debug, Clone, Default)]
 pub struct IfTrue {
     elems: Stack,
 }
 
-impl Eval<()> for IfTrue {
+impl Eval<Flow> for IfTrue {
     fn eval(
         &self,
         values: &mut Vec<Values>,
         env: &Env,
         vars: &mut ChainMap,
-    ) -> Result<(), EvalError> {
+    ) -> Result<Flow, EvalError> {
         match values.pop() {
             Some(Values::Bool(true)) => match self.elems.eval(values, env, vars) {
                 x @ Ok(_) => x,
                 Err(err) => Err(EvalError::IfBodyFail(Box::new(err))),
             },
-            Some(Values::Bool(false)) => Ok(()),
+            Some(Values::Bool(false)) => Ok(Flow::Ok),
             Some(x) => Err(EvalError::IfCondExpectsBoolButGot(x.to_owned())),
             None => Err(EvalError::IfCondUnderFlow),
         }

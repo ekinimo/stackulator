@@ -1,6 +1,7 @@
 use super::stack::Stack;
 use crate::language::env::Env;
-use crate::language::eval::{ChainMap, Eval, EvalError, Values};
+use crate::language::eval::{ChainMap, Eval, EvalError, Values,Flow};
+
 use malachite::{Integer, Rational};
 
 #[derive(Debug, Clone)]
@@ -23,13 +24,13 @@ pub struct Match {
     elems: Vec<MatchElem>,
 }
 
-impl Eval<bool> for MatchElem {
+impl Eval<Flow> for MatchElem {
     fn eval(
         &self,
         values: &mut Vec<Values>,
         env: &Env,
         vars: &mut ChainMap,
-    ) -> Result<bool, EvalError> {
+    ) -> Result<Flow, EvalError> {
         vars.push();
 
         for pat in self.pattern.iter().rev() {
@@ -41,7 +42,7 @@ impl Eval<bool> for MatchElem {
                 (Pattern::Float(x), Values::Float(y)) if *x == y => (),
                 (Pattern::Bool(x), Values::Bool(y)) if *x == y => (),
                 (Pattern::Variable(var), x) => vars.insert(*var, x.to_owned()),
-                (_, _) => return Ok(false),
+                (_, _) => return Ok(Flow::Cont),
             }
         }
 
@@ -57,7 +58,7 @@ impl Eval<bool> for MatchElem {
 
             match cond.pop() {
                 Some(Values::Bool(true)) => {}
-                Some(Values::Bool(false)) => return Ok(false),
+                Some(Values::Bool(false)) => return Ok(Flow::Cont),
                 Some(x) => {
                     return Err(EvalError::MatchCondExpectsBoolButGot(x.to_owned()));
                 }
@@ -67,25 +68,23 @@ impl Eval<bool> for MatchElem {
             };
         }
 
-        match self.body.eval(values, env, vars) {
-            Ok(_) => {}
-            Err(err) => {
-                return Err(EvalError::MatchArmFail(Box::new(err)));
-            }
-        }
-
+        let ret = self.body.eval(values, env, vars).map_err(|err| EvalError::MatchArmFail(Box::new(err)));
+        
         vars.pop();
-        Ok(true)
+        ret
+
+        
+        
     }
 }
 
-impl Eval<()> for Match {
+impl Eval<Flow> for Match {
     fn eval(
         &self,
         values: &mut Vec<Values>,
         env: &Env,
         vars: &mut ChainMap,
-    ) -> Result<(), EvalError> {
+    ) -> Result<Flow, EvalError> {
         let max_len = self.elems.iter().map(|x| x.pattern.len()).max().unwrap();
         if max_len > values.len() {
             return Err(EvalError::MatchPatternUnderflow);
@@ -94,10 +93,10 @@ impl Eval<()> for Match {
         for arm in &self.elems {
             let mut temp_values = values.clone();
             match arm.eval(&mut temp_values, env, vars) {
-                Ok(false) => {}
-                Ok(true) => {
+                Ok(Flow::Cont) => {}
+                Ok( ret @ Flow::Break | ret @ Flow::Ret | ret @ Flow::Ok) => {
                     *values = temp_values;
-                    return Ok(());
+                    return Ok(ret);
                 }
                 Err(err) => {
                     return Err(EvalError::MatchBodyFail(Box::new(err)));

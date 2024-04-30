@@ -20,6 +20,8 @@ pub enum Ast {
     Float(Rational),
     Int(Integer),
     Bool(bool),
+    Return,
+    Break,
 }
 
 use crate::language::ast::iftrue::IfTrue;
@@ -65,7 +67,8 @@ impl Parse for Ast {
             Rule::ifTrue => Ast::IfTrue(IfTrue::parse(pairs, ctx)),
             Rule::stack => Ast::Stack(Stack::parse(pairs, ctx)),
             Rule::matchBlock => Ast::Match(Match::parse(pairs, ctx)),
-
+            Rule::ret        => Ast::Return,
+            Rule::brek       => Ast::Break,
             _ => unreachable!(),
         }
     }
@@ -87,6 +90,8 @@ impl Representation<(), ParseCtx> for Ast {
             Ast::Int(i) => format!("{i}"),
             Ast::Bool(true) => "false".to_string(),
             Ast::Bool(false) => "true".to_string(),
+            Ast::Break => "break".to_string(),
+            Ast::Return => "return".to_string(),
         }
     }
 }

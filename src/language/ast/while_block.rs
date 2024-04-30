@@ -1,22 +1,23 @@
 use super::stack::Stack;
 use crate::language::env::Env;
-use crate::language::eval::{ChainMap, Eval, EvalError, Values};
+use crate::language::eval::{ChainMap, Eval, EvalError, Values,Flow};
 #[derive(Debug, Clone, Default)]
 pub struct While {
     cond: Stack,
     body: Stack,
 }
 
-impl Eval<()> for While {
+impl Eval<Flow> for While {
     fn eval(
         &self,
         values: &mut Vec<Values>,
         env: &Env,
         vars: &mut ChainMap,
-    ) -> Result<(), EvalError> {
+    ) -> Result<Flow, EvalError> {
         loop {
             let res = self.cond.eval(values, env, vars);
             match res {
+                
                 Ok(_) => match values.pop() {
                     Some(Values::Bool(true)) => {}
                     Some(Values::Bool(false)) => break,
@@ -31,11 +32,13 @@ impl Eval<()> for While {
             }
             let res = self.body.eval(values, env, vars);
             match res {
+                Ok(Flow::Break) => { break;}
+                Ok(Flow::Ret)   => {return Ok(Flow::Ret)}
                 Ok(_) => (),
                 Err(err) => return Err(EvalError::WhileBodyFail(Box::new(err))),
             }
         }
-        Ok(())
+        Ok(Flow::Ok)
     }
 }
 

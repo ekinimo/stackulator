@@ -152,6 +152,13 @@ impl Representation<(), ParseCtx> for EvalError {
     }
 }
 
+pub enum Flow{
+    Break,
+    Ok,
+    Ret,
+    Cont,
+}
+
 pub trait Eval<T> {
     fn eval(
         &self,

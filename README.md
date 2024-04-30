@@ -1,5 +1,6 @@
 # Stackulator
 Stackulator is a stack based calculator/programming language bundled with a graphical user interface.
+The project is WIP. 
 
 ## Language
 
@@ -31,9 +32,15 @@ Control flow constructs and functions. They generally take something from the st
 
 ##### While 
 Syntax is `while condition {body}`. Body is evaluated untill condition is met.
-Conditions must return a boolean.
+Conditions must return a boolean. You can break out of the body using `break` 
 - `while true {1 2 3}`
 - `while 2 3 leq {1 2 3}`
+
+##### Break
+Hands the control to the upper level.
+
+##### Return
+Hands the control to the top level.
 
 ##### If   
 Syntax is `?{body}`. Last value on the stack must be a boolean. if its true body is evaluated.
@@ -56,30 +63,32 @@ Otherwise next patterns will be tried
                     |      _x when _x 3 geq => true
 ```
 
-##### Primitive Calls :
-** Arithmetic
-    - `add`
-    - `sub` 
-    - `mult` 
-    - `div`
-** Boolean
-    - `and`
-    - `or`
-    - `not`
-** Compare
-    - `eq`
-    - `geq`
-    - `leq`
-    - `ge`
-    - `le`
-** Conversion
-    - `i2f` Integer to Float
-    - `f2i` Float to Integer
-** Stack related
-    - `apply`
+##### Primitive Calls 
+###### Arithmetic
+- `add`
+- `sub` 
+- `mult` 
+- `div`
+###### Boolean
+- `and`
+- `or`
+- `not`
+###### Compare
+- `eq`
+- `geq`
+- `leq`
+- `ge`
+- `le`
+###### Conversion
+- `i2f` Integer to Float
+- `f2i` Float to Integer
+###### Quotation related
+- `apply`
+
 
 ### Functions
-You can define functions by `function_name = body`. you can seperate functions and definitions bwith `;`.
+You can define functions by `function_name = body`. you can seperate functions and definitions with `;`.
+defined functions can later be called with `function_name`.
 
 
 
@@ -111,10 +120,29 @@ fib = | _n |{ 1 1 _n }
     1 add dup fib swap
 } ;
 ```
-
+    
 ## GUI Shortcuts
     | `<Ctr> + <Enter>` | Evaluates the expression|
     | `<F4>`            | Evaluates the expression|
     | `<Ctr> + <Up>`    | cycles through history  |
     | `<Ctr> + <Down>`  | cycles through history  |
     
+
+## TODO
+
+- There are currently no checks for multiple variable names in take blocks
+- Break should only be possible in while loops (possibly also in take blocks?)
+- Chars
+- Vectors (mono typed)
+- Lists
+- Sets
+- Maps
+- structs / enums and match compatability
+- interfaces
+- VM should run on its own thread. 
+- GUI should support saving and opening/appending a session.
+
+This here is more of a roadmap
+- Give language ability to acces the GUI itself.
+- Stack size checking (We should have an option of the language where `while` , `if` and `match` respects the stack size ) 
+- Statical type system (We should have an option of the language where the program is staticallly typed. We probably will require type signatures at function boundries ) 

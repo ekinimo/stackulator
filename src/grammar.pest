@@ -12,7 +12,9 @@ integer = @{ (plusminus? ~ nonZero ~ digit?) | zero}
 float = @{plusminus? ~digit ~ "." ~ digit }
 num = _{float | integer}
 bools = {"true" | "false"}
-primitives = { "add" | "sub" | "mult" | "div" | "and" | "or" | "eq" | "geq" | "leq" | "ge" | "le" | 
+ret   = {"return"}
+brek = {"break"}
+primitives = { "add" | "sub" | "mult" | "div" | "and" | "or" | "eq" | "geq" | "leq" | "ge" | "le" |
                 "not" | "i2f" | "f2i" | "apply"
              }
 
@@ -40,7 +42,7 @@ matchElem = { patterns ~ (when)? ~ "=>" ~ matchArm}
 matchBlock = { "match" ~ ("|" ~ matchElem ~ ",")+  }
 
 atom = _{ 
- 	num | bools |take | whileLoop | matchBlock | ifTrue | stack | primitives | funName | varName
+ 	ret| brek | num | bools |take | whileLoop | matchBlock | ifTrue | stack | primitives | funName | varName
 }
 
 insides = _{atom* }

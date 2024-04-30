@@ -1,6 +1,6 @@
 use super::stack::Stack;
 use crate::language::env::Env;
-use crate::language::eval::{ChainMap, Eval, EvalError, Values};
+use crate::language::eval::{ChainMap, Eval, EvalError, Values,Flow};
 
 #[derive(Debug, Clone, Default)]
 pub struct Take {
@@ -8,13 +8,13 @@ pub struct Take {
     body: Stack,
 }
 
-impl Eval<()> for Take {
+impl Eval<Flow> for Take {
     fn eval(
         &self,
         values: &mut Vec<Values>,
         env: &Env,
         vars: &mut ChainMap,
-    ) -> Result<(), EvalError> {
+    ) -> Result<Flow, EvalError> {
         if values.len() < self.vars.len() {
             return Err(EvalError::TakeUnderflow);
         }
@@ -24,15 +24,16 @@ impl Eval<()> for Take {
             let val = values.pop().unwrap();
             vars.insert(*i, val);
         }
-        match self.body.eval(values, env, vars) {
-            Ok(_) => (),
+        let ret = match self.body.eval(values, env, vars) {
+
+            res@Ok(_) => res,
             Err(err) => {
                 vars.pop();
                 return Err(EvalError::TakeBodyFail(Box::new(err)));
             }
-        }
+        };
         vars.pop();
-        Ok(())
+        ret
     }
 }
 

@@ -1,5 +1,5 @@
 use crate::language::env::Env;
-use crate::language::eval::{ChainMap, Eval, EvalError, Values};
+use crate::language::eval::{ChainMap, Eval, EvalError, Values,Flow};
 use malachite::num::arithmetic::traits::*;
 
 #[derive(Debug, Clone)]
@@ -21,13 +21,13 @@ pub enum Primitives {
     FloatToInt,
 }
 
-impl Eval<()> for Primitives {
+impl Eval<Flow> for Primitives {
     fn eval(
         &self,
         values: &mut Vec<Values>,
         env: &Env,
         vars: &mut ChainMap,
-    ) -> Result<(), EvalError> {
+    ) -> Result<Flow, EvalError> {
         match self {
             Primitives::Add => {
                 if values.len() < 2 {
@@ -40,7 +40,7 @@ impl Eval<()> for Primitives {
                     (Values::Int(a), Values::Int(b)) => values.push(Values::Int(a + b)),
                     (_, _) => return Err(EvalError::PrimitiveTypeErr),
                 }
-                Ok(())
+                Ok(Flow::Ok)
             }
             Primitives::Sub => {
                 if values.len() < 2 {
@@ -53,7 +53,7 @@ impl Eval<()> for Primitives {
                     (Values::Int(a), Values::Int(b)) => values.push(Values::Int(a - b)),
                     (_, _) => return Err(EvalError::PrimitiveTypeErr),
                 }
-                Ok(())
+                Ok(Flow::Ok)
             }
             Primitives::Mult => {
                 if values.len() < 2 {
@@ -66,7 +66,7 @@ impl Eval<()> for Primitives {
                     (Values::Int(a), Values::Int(b)) => values.push(Values::Int(a * b)),
                     (_, _) => return Err(EvalError::PrimitiveTypeErr),
                 }
-                Ok(())
+                Ok(Flow::Ok)
             }
             Primitives::Div => {
                 if values.len() < 2 {
@@ -79,7 +79,7 @@ impl Eval<()> for Primitives {
                     (Values::Int(a), Values::Int(b)) => values.push(Values::Int(a / b)),
                     (_, _) => return Err(EvalError::PrimitiveTypeErr),
                 }
-                Ok(())
+                Ok(Flow::Ok)
             }
 
             Primitives::Eq => {
@@ -94,7 +94,7 @@ impl Eval<()> for Primitives {
                     (Values::Bool(a), Values::Bool(b)) => values.push(Values::Bool(a == b)),
                     (_, _) => return Err(EvalError::PrimitiveTypeErr),
                 }
-                Ok(())
+                Ok(Flow::Ok)
             }
             Primitives::Ge => {
                 if values.len() < 2 {
@@ -107,7 +107,7 @@ impl Eval<()> for Primitives {
                     (Values::Int(a), Values::Int(b)) => values.push(Values::Bool(a > b)),
                     (_, _) => return Err(EvalError::PrimitiveTypeErr),
                 }
-                Ok(())
+                Ok(Flow::Ok)
             }
             Primitives::Le => {
                 if values.len() < 2 {
@@ -120,7 +120,7 @@ impl Eval<()> for Primitives {
                     (Values::Int(a), Values::Int(b)) => values.push(Values::Bool(a < b)),
                     (_, _) => return Err(EvalError::PrimitiveTypeErr),
                 }
-                Ok(())
+                Ok(Flow::Ok)
             }
             Primitives::Geq => {
                 if values.len() < 2 {
@@ -133,7 +133,7 @@ impl Eval<()> for Primitives {
                     (Values::Int(a), Values::Int(b)) => values.push(Values::Bool(a >= b)),
                     (_, _) => return Err(EvalError::PrimitiveTypeErr),
                 }
-                Ok(())
+                Ok(Flow::Ok)
             }
             Primitives::Leq => {
                 if values.len() < 2 {
@@ -146,7 +146,7 @@ impl Eval<()> for Primitives {
                     (Values::Int(a), Values::Int(b)) => values.push(Values::Bool(a <= b)),
                     (_, _) => return Err(EvalError::PrimitiveTypeErr),
                 }
-                Ok(())
+                Ok(Flow::Ok)
             }
 
             Primitives::And => {
@@ -160,7 +160,7 @@ impl Eval<()> for Primitives {
                     (Values::Int(a), Values::Int(b)) => values.push(Values::Int(a & b)),
                     (_, _) => return Err(EvalError::PrimitiveTypeErr),
                 }
-                Ok(())
+                Ok(Flow::Ok)
             }
             Primitives::Or => {
                 if values.len() < 2 {
@@ -173,7 +173,7 @@ impl Eval<()> for Primitives {
                     (Values::Int(a), Values::Int(b)) => values.push(Values::Int(a | b)),
                     (_, _) => return Err(EvalError::PrimitiveTypeErr),
                 }
-                Ok(())
+                Ok(Flow::Ok)
             }
 
             Primitives::Not => {
@@ -186,7 +186,7 @@ impl Eval<()> for Primitives {
                     Values::Int(a) => values.push(Values::Int(!a)),
                     _ => return Err(EvalError::PrimitiveTypeErr),
                 }
-                Ok(())
+                Ok(Flow::Ok)
             }
             Primitives::IntToFloat => {
                 if values.is_empty() {
@@ -197,7 +197,7 @@ impl Eval<()> for Primitives {
                     Values::Int(a) => values.push(Values::Float(a.into())),
                     _ => return Err(EvalError::PrimitiveTypeErr),
                 }
-                Ok(())
+                Ok(Flow::Ok)
             }
 
             Primitives::FloatToInt => {
@@ -209,7 +209,7 @@ impl Eval<()> for Primitives {
                     Values::Float(a) => values.push(Values::Int(a.ceiling())),
                     _ => return Err(EvalError::PrimitiveTypeErr),
                 }
-                Ok(())
+                Ok(Flow::Ok)
             }
             Primitives::Eval => {
                 if values.is_empty() {
@@ -217,7 +217,7 @@ impl Eval<()> for Primitives {
                 }
                 if let Values::Stack(stack) = values.pop().unwrap() {
                     match stack.to_owned().eval(values, env, vars) {
-                        Ok(_) => {}
+                        ret @ Ok(_) => {return ret;}
                         Err(_) => {
                             return Err(EvalError::PrimitiveEvalErr);
                         }
@@ -226,7 +226,7 @@ impl Eval<()> for Primitives {
                     return Err(EvalError::PrimitiveTypeErr);
                 }
 
-                Ok(())
+                
             }
         }
     }
