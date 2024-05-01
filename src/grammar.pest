@@ -1,62 +1,162 @@
-WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
-COMMENT = _{ ("/*" ~ (!"*/" ~ ANY)* ~ "*/") | ("//" ~ (!"\n" ~ ANY)* ~ ("\n"|EOI))  }
+WHITESPACE             = _{ " " | "\t" | "\r" | "\n" }
+COMMENT                = _{ ("/*" ~ (!"*/" ~ ANY)* ~ "*/") | ("//" ~ (!"\n" ~ ANY)* ~ ("\n"|EOI))  }
 
 
-zero = _{ "0" }
-nonZero = _{'1' .. '9'}
-digit = _{(zero | nonZero)*}
-plus = _{"+"}
-minus = _{"-"}
-plusminus = _{ plus | minus }
-integer = @{ (plusminus? ~ nonZero ~ digit?) | zero}
-float = @{plusminus? ~digit ~ "." ~ digit }
-num = _{float | integer}
-bools = {"true" | "false"}
-ret   = {"return"}
-brek = {"break"}
-primitives = { "add" | "sub" | "mult" | "div" | "and" | "or" | "eq" | "geq" | "leq" | "ge" | "le" |
-                "not" | "i2f" | "f2i" | "apply"
-             }
+zero                   = _{ "0" }
+nonZero                = _{'1' .. '9'}
+digit                  = _{(zero | nonZero)*}
+plus                   = _{"+"}
+minus                  = _{"-"}
+plusminus              = _{ plus | minus }
+integer                = @{ (plusminus? ~ nonZero ~ digit?) | zero}
+float                  = @{plusminus? ~digit ~ "." ~ digit }
+num                    = _{float | integer}
+bools                  = {"true" | "false"}
+ret                    = {"return"}
+brek                   = {"break"}
+primitives             = {
+                               "stack_size" |"get"       
+                                            |"set"       
+                                            |"concat"    
+                                            |"push_first"
+                                            |"push"      
+                                            |"pop_first" 
+                                            |"pop"
+                                            |"delete"    
+                                            |"insert"    
+                                            |"len"       
+                                            |"contains"
+                                            |"add"
+                                            |"sub"       
+                                            |"mul"       
+                                            |"div"       
+                                            |"eq"        
+                                            |"ge"        
+                                            |"le"        
+                                            |"geq"       
+                                            |"leq"       
+                                            |"and"       
+                                            |"or"        
+                                            |"not"       
+                                            |"apply"     
+                                            |"i2f"       
+                                            |"f2i"       
+                                            |"l22"       
+                                            |"s2l"       
 
-lowercase = _{'a' .. 'z'}
-uppercase = _{'A' .. 'Z'}
-funName   = @{lowercase ~ (lowercase | uppercase | zero |nonZero | "_" )* }
-varName   = @{"_" ~ lowercase ~ (lowercase | uppercase | zero |nonZero | "_" )*  }
-
-takeVars = {"|" ~ varName+  ~"|" }
-block = { "{" ~ atom* ~"}" }
-take     = { takeVars ~ block}
-
-whileCond = {"while" ~ atom+}
-whileLoop  = {whileCond ~ block}
-
-ifTrue = {"?" ~ block}
-stack = { "[" ~ atom* ~ "]"}
-
-dontCare = {"_"}
-pattern = _{ varName | num | dontCare | bools  }
-when = {"when" ~atom+}
-matchArm = {atom*}
-patterns = {pattern+}
-matchElem = { patterns ~ (when)? ~ "=>" ~ matchArm}
-matchBlock = { "match" ~ ("|" ~ matchElem ~ ",")+  }
-
-atom = _{ 
- 	ret| brek | num | bools |take | whileLoop | matchBlock | ifTrue | stack | primitives | funName | varName
 }
 
-insides = _{atom* }
+lowercase              = _{'a' .. 'z'}
+uppercase              = _{'A' .. 'Z'}
+funName                = @{lowercase ~ (lowercase | uppercase | zero |nonZero | "_" )* }
+varName                = @{"_" ~ lowercase ~ (lowercase | uppercase | zero |nonZero | "_" )*  }
 
-def = {
-funName ~ "=" ~ insides 
+takeVars               = {"|" ~ varName+  ~"|" }
+block                  = { "{" ~ atom* ~"}" }
+take                   = { takeVars ~ block}
+
+whileCond              = {"while" ~ atom+}
+whileLoop              = {whileCond ~ block}
+
+ifTrue                 = {"?" ~ block}
+stack                  = { "[" ~ atom* ~ "]"}
+
+dontCare               = {"_"}
+
+manyvar                = @{"$" ~ varName  }
+many                   =               @{"$"}
+intPattern             = { "Int" ~ "(" ~ varName ~ ")"}
+ratPattern             = { "Rat" ~ "(" ~ varName ~ ")"}
+boolPattern            = { "Bool" ~ "(" ~ varName ~ ")"}
+stackPattern           = { "Quote" ~ "(" ~ varName ~ ")"}
+intDontCarePattern     = { "Int" ~ "(" ~ "_" ~ ")"}
+ratDontCarePattern     = { "Rat" ~ "(" ~ "_" ~ ")"}
+boolDontCarePattern    = { "Bool" ~ "(" ~ varName ~ ")"}
+stackDontCarePattern   = { "Quote" ~ "(" ~ varName ~ ")"}
+listAllpattern         = { "List" ~ "(" ~ manyvar ~ ")"}
+listAllDontCarepattern = { "List" ~ "(" ~ many ~ ")"}
+listFullPattern        = { "List" ~ "(" ~ pattern* ~ ")"}
+listStart              = { "List" ~ "(" ~ pattern+ ~ manyvar  ~ ")"}
+listStartDontCare      = { "List" ~ "(" ~ pattern+ ~ many  ~ ")"}
+listEnd                = { "List" ~ "(" ~ manyvar ~ pattern+   ~ ")"}
+listEndDontCare        = { "List" ~ "(" ~ many ~ pattern+   ~ ")"}
+listStartEnd           = { "List" ~ "(" ~ pattern+ ~ manyvar ~ pattern+  ~ ")"}
+listStartEndDontCare   = { "List" ~ "(" ~ pattern+ ~ many ~ pattern+  ~ ")"}
+
+listPattern            = _{
+| listAllpattern         
+| listAllDontCarepattern 
+| listFullPattern        
+| listStart              
+| listStartDontCare      
+| listEnd                
+| listEndDontCare        
+| listStartEnd           
+| listStartEndDontCare   
+
 }
 
-expr = {atom+ }
+setAllpattern          = { "Set" ~ "(" ~ manyvar ~ ")"}
+setAllDontCarepattern  = { "Set" ~ "(" ~ many ~ ")"}
+setFullPattern         = { "Set" ~ "(" ~ pattern* ~ ")"}
+setFront               = { "Set" ~ "(" ~ pattern+ ~ manyvar ~  ")"}
+setFrontDontCare       = { "Set" ~ "(" ~ pattern+ ~ many ~  ")"}
 
-justDef = _{SOI ~ def ~ EOI}
-justExpr = _{SOI ~ expr ~ EOI}
-justExprOrDef = _{SOI ~ (def | expr) ~ EOI}
-defsAndExprs = _{SOI ~ ((def | expr) ~ ";")* ~ EOI}
+setPattern = _{
+
+setAllpattern          |
+setAllDontCarepattern  |
+setFullPattern         |
+setFront               |
+setFrontDontCare       
+
+}
+
+pattern                = _{ varName | num | dontCare | bools
+
+| intPattern             
+| ratPattern             
+| boolPattern            
+| stackPattern           
+| intDontCarePattern     
+| ratDontCarePattern     
+| boolDontCarePattern    
+| stackDontCarePattern   
+| listPattern
+| setPattern
+
+}
+
+when                   = {"when" ~atom+}
+matchArm               = {atom*}
+patterns               = {pattern+}
+matchElem              = { patterns ~ (when)? ~ "=>" ~ matchArm}
+matchBlock             = {  ("|" ~ matchElem ~ ",")+  }
+
+
+
+list                   = { "List" ~ "(" ~atom* ~("," ~ atom+)* ~ ")"  }
+set                    = { "Set" ~ "(" ~atom* ~("," ~ atom+)* ~ ")"  }
+map                    = { "Map" ~ "(" ~atom* ~("," ~ atom+)* ~ ")"  }
+
+atom                   = _{ 
+ 	  num | bools | stack | list | set | map 
+   | ret | brek | take  | whileLoop | matchBlock | ifTrue
+   | primitives | funName | varName
+}
+
+insides                = _{atom* }
+
+def                    = {
+funName ~ "            =" ~ insides 
+}
+
+expr                   = {atom+ }
+
+justDef                = _{SOI ~ def ~ EOI}
+justExpr               = _{SOI ~ expr ~ EOI}
+justExprOrDef          = _{SOI ~ (def | expr) ~ EOI}
+defsAndExprs           = _{SOI ~ ((def | expr) ~ ";")* ~ EOI}
 
 
 

@@ -2,7 +2,7 @@ use super::stack::Stack;
 use crate::language::env::Env;
 use crate::language::eval::{ChainMap, Eval, EvalError, Values,Flow};
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default,PartialEq,PartialOrd,Ord,Eq)]
 pub struct Take {
     vars: Vec<usize>,
     body: Stack,
@@ -35,9 +35,28 @@ impl Eval<Flow> for Take {
         vars.pop();
         ret
     }
+
+    fn get_free_vars(&self,vars:&mut std::collections::HashSet<usize>) {
+        self.body.get_vars(vars);
+        let my_vars : HashSet<usize>= self.vars.iter().cloned().collect();
+        *vars =vars.difference(&my_vars).cloned().collect();
+    }
+
+    fn get_vars(&self,vars:&mut std::collections::HashSet<usize>) {
+        self.body.get_vars(vars)
+    }
+
+    fn replace_vars(self,free_vars:& std::collections::HashSet<usize>,map_vars:&ChainMap)->Self {
+        let Take { vars, mut body } = self;
+        body = body.replace_vars(free_vars, map_vars);
+        Take { vars,  body }
+    }
+
+    
 }
 
 use crate::language::ast::Ast;
+use std::collections::HashSet;
 use std::sync::Arc;
 
 use crate::language::parse::{Parse, ParseCtx, Rule};

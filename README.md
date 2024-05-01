@@ -27,6 +27,16 @@ Analogous to lambdas. It is a value. You can call it by `apply`
 - `[12 3 4]`
 - `[add ]`
 
+#####  List
+`List(1 2 3, 3 4 5 add)`
+TODO
+#####  Set
+`Set(1 2 3, 3 4 5 add)`
+TODO
+#####  Maps
+`Map( List(1 2), List(3, 3) List(4 3 5 add) )`
+TODO
+
 #### Constructs
 Control flow constructs and functions. They generally take something from the stack do something with it and pushes back the result
 
@@ -57,12 +67,13 @@ Syntax is `match (| patterns (when condition)? => body ,)+`. Pattern can be a va
 Patterns will be matched one by one to the top of the stack if they match additionally condiotion after when is checked in that case body is evaluated.
 Otherwise next patterns will be tried
 ``` 
-                    match
+                    
                     |    1  2               => 3,
                     | 1  1  1               => 5,
                     |      _x when _x 3 geq => true
 ```
-
+###### Advanced Patterns
+TODO
 ##### Primitive Calls 
 ###### Arithmetic
 - `add`
@@ -134,13 +145,23 @@ fib = | _n |{ 1 1 _n }
 - Break should only be possible in while loops (possibly also in take blocks?)
 - Chars
 - Vectors (mono typed)
-- Lists
-- Sets
-- Maps
+- Lists [Partly Done]
+- Sets  [Partly Done]
+- Maps  [Partly Done]
 - structs / enums and match compatability
 - interfaces
 - VM should run on its own thread. 
 - GUI should support saving and opening/appending a session.
+- GUI debug. Language Eval trait should have step method
+- GUI History bug
+- GUI history search
+- GUI editable value stack 
+- GUI editable definitions
+- GUI definition search
+- GUI suggest function
+- GUI better editing
+- Language formatter
+- Language pretty print/display
 
 This here is more of a roadmap
 - Give language ability to acces the GUI itself.

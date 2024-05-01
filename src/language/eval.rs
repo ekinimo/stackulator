@@ -1,5 +1,6 @@
+use super::ast::primitives::Primitives;
 use super::env::Env;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque, BTreeSet, BTreeMap, HashSet};
 
 #[derive(Clone, Debug)]
 pub enum EvalError {
@@ -26,19 +27,40 @@ pub enum EvalError {
     MatchCondUnderFlow,
     MatchCondExpectsBoolButGot(Values),
 
-    PrimitiveUnderflow,
-    PrimitiveTypeErr,
+    PrimitiveUnderflow(Primitives),
+    PrimitiveTypeErr(Primitives,String),
     PrimitiveEvalErr,
+    MapExprMustHaveListOfLen2
+
 }
 
 use malachite::{Integer, Rational};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone,PartialEq,PartialOrd,Ord,Eq)]
 pub enum Values {
-    Float(Rational),
-    Int(Integer),
     Bool(bool),
+    Int(Integer),
+    Float(Rational),
+
     Stack(super::ast::stack::Stack),
+    List(VecDeque<Values> ),
+    Set(BTreeSet<Values> ),
+    Map(BTreeMap<Values,Values> ),
+}
+
+impl Values{
+
+    pub fn get_type(&self)->&str{
+        match self {
+            Values::Float(_) => "float",
+            Values::Int(_) => "int",
+            Values::Bool(_) => "bool",
+            Values::Stack(_) => "stack",
+            Values::List(_) => "list",
+            Values::Set(_) => "set",
+            Values::Map(_) => "map",
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -69,7 +91,7 @@ impl ChainMap {
         last.insert(var, value);
         self.data.push(last);
     }
-    pub fn lookup(&mut self, var: &usize) -> Option<Values> {
+    pub fn lookup(&self, var: &usize) -> Option<Values> {
         for map in self.data.iter().rev() {
             if map.contains_key(var) {
                 return map.get(var).cloned();
@@ -89,6 +111,33 @@ impl Representation<(), ParseCtx> for Values {
             Values::Int(i) => format!("{i}"),
             Values::Bool(i) => format!("{i}"),
             Values::Stack(s) => s.get_repr(context),
+            Values::List(l) => {
+                let mut ret =  String::new();
+                ret.push_str("List(");
+                l.iter().for_each(|x| {ret.push_str(&x.get_repr(context)); ret.push_str(", ");});
+                ret.push(')');
+                ret
+            },
+            Values::Set(l) => {
+                let mut ret =  String::new();
+                ret.push_str("Set(");
+                l.iter().for_each(|x| {ret.push_str(&x.get_repr(context)); ret.push_str(", ");});
+                ret.push(')');
+                ret
+            },
+            Values::Map(map) => {
+                let mut ret =  String::new();
+                ret.push_str("Map(");
+                map.iter().for_each(|(x,y)| {
+                    ret.push_str("[ ");ret.push_str(&x.get_repr(context)); ret.push_str(", "); ret.push_str(&y.get_repr(context));
+                    ret.push_str("] ");
+                    ret.push_str(", ");
+                });
+                ret.push(')');
+                ret
+                    
+            },
+            
         }
     }
 }
@@ -140,14 +189,15 @@ impl Representation<(), ParseCtx> for EvalError {
                 format!("MatchCondExpectsBoolButGot {}", x.get_repr(context))
             }
             EvalError::MatchCondUnderFlow => "MatchCondUnderFlow".to_string(),
-            EvalError::PrimitiveUnderflow => "PrimitiveUnderflow".to_string(),
-            EvalError::PrimitiveTypeErr => "PrimitiveTypeErr".to_string(),
-            EvalError::PrimitiveEvalErr => "PrimitiveEvalErr".to_string(),
+            EvalError::PrimitiveUnderflow(p) => format!("PrimitiveUnderflow {}",p.get_repr(context)),
+            EvalError::PrimitiveTypeErr(p,s) => format!("PrimitiveTypeErr {} {}",p.get_repr(context),s),
+            EvalError::PrimitiveEvalErr => "PrimitiveEvalErr ".to_string(),
             EvalError::IfCondUnderFlow => "IfCondUnderFlow".to_string(),
             EvalError::NoMatch => "NoMatch".to_string(),
             EvalError::MatchPatternUnderflow => "MatchPatternUnderflow".to_string(),
             EvalError::WhileCondUnderFlow => "WhileCondUnderFlow".to_string(),
             EvalError::TakeUnderflow => "TakeUnderflow".to_string(),
+            EvalError::MapExprMustHaveListOfLen2 => "MapExprMustHaveListOfLen2".to_string(),
         }
     }
 }
@@ -166,4 +216,8 @@ pub trait Eval<T> {
         env: &Env,
         vars: &mut ChainMap,
     ) -> Result<T, EvalError>;
+
+    fn get_free_vars(&self,vars:&mut HashSet<usize>);
+    fn get_vars(&self,vars:&mut std::collections::HashSet<usize>);
+    fn replace_vars(self,free_vars:& std::collections::HashSet<usize>,vars:&ChainMap)->Self;
 }
