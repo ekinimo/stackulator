@@ -132,7 +132,6 @@ impl Pattern {
                         _ => (),
                     }
                 }
-
                 Flow::Ok
             }
             (
@@ -145,12 +144,15 @@ impl Pattern {
                         _ => (),
                     }
                 }
-                for pat in end {
+               
+                for pat in end.iter().rev() {
                     match x.pop_back().map(|x| pat.pattern_match(x, vars)) {
                         None => return Flow::Cont,
                         _ => (),
                     }
                 }
+
+                dbg!(&x);
                 vars.insert(*var, Values::List(x.to_owned()));
                 Flow::Ok
             }

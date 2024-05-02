@@ -148,7 +148,7 @@ atom                   = _{
 insides                = _{atom* }
 
 def                    = {
-funName ~ "            =" ~ insides 
+funName ~ "=" ~ insides 
 }
 
 expr                   = {atom+ }
