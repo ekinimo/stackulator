@@ -114,7 +114,7 @@ use crate::language::ast::stack::Stack;
 use crate::language::ast::take::Take;
 use crate::language::ast::while_block::While;
 use crate::language::parse::{Parse, ParseCtx, Rule};
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 use std::sync::Arc;
 

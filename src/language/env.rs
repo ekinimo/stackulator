@@ -1,6 +1,5 @@
 use std::{
-    collections::{BTreeSet, HashMap, HashSet},
-    default,
+    collections::{HashMap, HashSet},
 };
 
 use crate::language::ast::stack::Stack;
@@ -51,7 +50,7 @@ impl Default for Env {
                 vec![Type::Integer, Type::Integer],
                 (
                     vec![Type::Integer],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let b = values.pop().unwrap();
                         let a = values.pop().unwrap();
                         match (a, b) {
@@ -66,7 +65,7 @@ impl Default for Env {
                 vec![Type::Float, Type::Float],
                 (
                     vec![Type::Float],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let b = values.pop().unwrap();
                         let a = values.pop().unwrap();
                         match (a, b) {
@@ -89,7 +88,7 @@ impl Default for Env {
                 vec![Type::Integer, Type::Integer],
                 (
                     vec![Type::Integer],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let b = values.pop().unwrap();
                         let a = values.pop().unwrap();
                         match (a, b) {
@@ -104,7 +103,7 @@ impl Default for Env {
                 vec![Type::Float, Type::Float],
                 (
                     vec![Type::Float],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let b = values.pop().unwrap();
                         let a = values.pop().unwrap();
                         match (a, b) {
@@ -127,7 +126,7 @@ impl Default for Env {
                 vec![Type::Integer, Type::Integer],
                 (
                     vec![Type::Integer],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let b = values.pop().unwrap();
                         let a = values.pop().unwrap();
                         match (a, b) {
@@ -142,7 +141,7 @@ impl Default for Env {
                 vec![Type::Float, Type::Float],
                 (
                     vec![Type::Float],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let b = values.pop().unwrap();
                         let a = values.pop().unwrap();
                         match (a, b) {
@@ -165,7 +164,7 @@ impl Default for Env {
                 vec![Type::Integer, Type::Integer],
                 (
                     vec![Type::Integer],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let b = values.pop().unwrap();
                         let a = values.pop().unwrap();
                         match (a, b) {
@@ -180,7 +179,7 @@ impl Default for Env {
                 vec![Type::Float, Type::Float],
                 (
                     vec![Type::Float],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let b = values.pop().unwrap();
                         let a = values.pop().unwrap();
                         match (a, b) {
@@ -203,7 +202,7 @@ impl Default for Env {
                 vec![Type::Integer, Type::Integer],
                 (
                     vec![Type::Bool],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let b = values.pop().unwrap();
                         let a = values.pop().unwrap();
                         match (a, b) {
@@ -218,7 +217,7 @@ impl Default for Env {
                 vec![Type::Float, Type::Float],
                 (
                     vec![Type::Bool],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let b = values.pop().unwrap();
                         let a = values.pop().unwrap();
                         match (a, b) {
@@ -235,7 +234,7 @@ impl Default for Env {
                 vec![Type::List, Type::List],
                 (
                     vec![Type::Bool],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let b = values.pop().unwrap();
                         let a = values.pop().unwrap();
                         match (a, b) {
@@ -250,7 +249,7 @@ impl Default for Env {
                 vec![Type::Set, Type::Set],
                 (
                     vec![Type::Bool],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let b = values.pop().unwrap();
                         let a = values.pop().unwrap();
                         match (a, b) {
@@ -265,7 +264,7 @@ impl Default for Env {
                 vec![Type::Map, Type::Map],
                 (
                     vec![Type::Bool],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let b = values.pop().unwrap();
                         let a = values.pop().unwrap();
                         match (a, b) {
@@ -286,7 +285,7 @@ impl Default for Env {
                 vec![Type::Integer, Type::Integer],
                 (
                     vec![Type::Bool],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let b = values.pop().unwrap();
                         let a = values.pop().unwrap();
                         match (a, b) {
@@ -301,7 +300,7 @@ impl Default for Env {
                 vec![Type::Float, Type::Float],
                 (
                     vec![Type::Bool],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let b = values.pop().unwrap();
                         let a = values.pop().unwrap();
                         match (a, b) {
@@ -318,7 +317,7 @@ impl Default for Env {
                 vec![Type::List, Type::List],
                 (
                     vec![Type::Bool],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let b = values.pop().unwrap();
                         let a = values.pop().unwrap();
                         match (a, b) {
@@ -333,7 +332,7 @@ impl Default for Env {
                 vec![Type::Set, Type::Set],
                 (
                     vec![Type::Bool],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let b = values.pop().unwrap();
                         let a = values.pop().unwrap();
                         match (a, b) {
@@ -348,7 +347,7 @@ impl Default for Env {
                 vec![Type::Map, Type::Map],
                 (
                     vec![Type::Bool],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let b = values.pop().unwrap();
                         let a = values.pop().unwrap();
                         match (a, b) {
@@ -369,7 +368,7 @@ impl Default for Env {
                 vec![Type::Integer, Type::Integer],
                 (
                     vec![Type::Bool],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let b = values.pop().unwrap();
                         let a = values.pop().unwrap();
                         match (a, b) {
@@ -384,7 +383,7 @@ impl Default for Env {
                 vec![Type::Float, Type::Float],
                 (
                     vec![Type::Bool],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let b = values.pop().unwrap();
                         let a = values.pop().unwrap();
                         match (a, b) {
@@ -408,7 +407,7 @@ impl Default for Env {
                 vec![Type::Integer, Type::Integer],
                 (
                     vec![Type::Bool],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let b = values.pop().unwrap();
                         let a = values.pop().unwrap();
                         match (a, b) {
@@ -423,7 +422,7 @@ impl Default for Env {
                 vec![Type::Float, Type::Float],
                 (
                     vec![Type::Bool],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let b = values.pop().unwrap();
                         let a = values.pop().unwrap();
                         match (a, b) {
@@ -446,7 +445,7 @@ impl Default for Env {
                 vec![Type::Integer, Type::Integer],
                 (
                     vec![Type::Bool],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let b = values.pop().unwrap();
                         let a = values.pop().unwrap();
                         match (a, b) {
@@ -461,7 +460,7 @@ impl Default for Env {
                 vec![Type::Float, Type::Float],
                 (
                     vec![Type::Bool],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let b = values.pop().unwrap();
                         let a = values.pop().unwrap();
                         match (a, b) {
@@ -485,7 +484,7 @@ impl Default for Env {
                 vec![Type::Integer, Type::Integer],
                 (
                     vec![Type::Bool],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let b = values.pop().unwrap();
                         let a = values.pop().unwrap();
                         match (a, b) {
@@ -500,7 +499,7 @@ impl Default for Env {
                 vec![Type::Float, Type::Float],
                 (
                     vec![Type::Bool],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let b = values.pop().unwrap();
                         let a = values.pop().unwrap();
                         match (a, b) {
@@ -524,7 +523,7 @@ impl Default for Env {
                 vec![Type::Integer, Type::Integer],
                 (
                     vec![Type::Integer],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let b = values.pop().unwrap();
                         let a = values.pop().unwrap();
                         match (a, b) {
@@ -539,7 +538,7 @@ impl Default for Env {
                 vec![Type::Bool, Type::Bool],
                 (
                     vec![Type::Bool],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let b = values.pop().unwrap();
                         let a = values.pop().unwrap();
                         match (a, b) {
@@ -560,7 +559,7 @@ impl Default for Env {
                 vec![Type::Integer, Type::Integer],
                 (
                     vec![Type::Integer],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let b = values.pop().unwrap();
                         let a = values.pop().unwrap();
                         match (a, b) {
@@ -575,7 +574,7 @@ impl Default for Env {
                 vec![Type::Bool, Type::Bool],
                 (
                     vec![Type::Bool],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let b = values.pop().unwrap();
                         let a = values.pop().unwrap();
                         match (a, b) {
@@ -596,7 +595,7 @@ impl Default for Env {
                 vec![Type::Integer, Type::Integer],
                 (
                     vec![Type::Integer],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let b = values.pop().unwrap();
                         let a = values.pop().unwrap();
                         match (a, b) {
@@ -611,7 +610,7 @@ impl Default for Env {
                 vec![Type::Bool, Type::Bool],
                 (
                     vec![Type::Bool],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let b = values.pop().unwrap();
                         let a = values.pop().unwrap();
                         match (a, b) {
@@ -632,10 +631,10 @@ impl Default for Env {
                 vec![Type::Integer, Type::Integer],
                 (
                     vec![Type::Integer],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let a = values.pop().unwrap();
-                        match (a) {
-                            (Values::Int(a)) => values.push(Values::Int(!a)),
+                        match a {
+                            Values::Int(a) => values.push(Values::Int(!a)),
                             _ => unreachable!(),
                         }
                         Ok(())
@@ -646,10 +645,10 @@ impl Default for Env {
                 vec![Type::Bool, Type::Bool],
                 (
                     vec![Type::Bool],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let a = values.pop().unwrap();
-                        match (a) {
-                            (Values::Bool(a)) => values.push(Values::Bool(!a)),
+                        match a {
+                            Values::Bool(a) => values.push(Values::Bool(!a)),
                             _ => unreachable!(),
                         }
                         Ok(())
@@ -666,7 +665,7 @@ impl Default for Env {
                 vec![],
                 (
                     vec![Type::Integer],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let l = values.len();
                         values.push(Values::Int(l.into()));
                         Ok(())
@@ -684,7 +683,7 @@ impl Default for Env {
                 vec![Type::List,Type::Integer],
                 (
                     vec![Type::GenericTyp(usize::MAX)],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let idx = values.pop().unwrap();
                         let list = values.pop().unwrap();
                         match (list, idx) {
@@ -709,7 +708,7 @@ impl Default for Env {
                 vec![Type::Map,Type::GenericTyp(usize::MAX)],
                 (
                     vec![Type::GenericTyp(usize::MAX)],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let idx = values.pop().unwrap();
                         let list = values.pop().unwrap();
                         match (list, idx) {
@@ -741,7 +740,7 @@ impl Default for Env {
                 vec![Type::List,Type::Integer,Type::GenericTyp(usize::MAX)],
                 (
                     vec![Type::GenericTyp(usize::MAX)],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let new_elem = values.pop().unwrap();
                         let idx = values.pop().unwrap();
                         let list = values.pop().unwrap();
@@ -768,7 +767,7 @@ impl Default for Env {
                 vec![Type::Map,Type::GenericTyp(usize::MAX),Type::GenericTyp(usize::MAX)],
                 (
                     vec![Type::GenericTyp(usize::MAX)],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let new_elem = values.pop().unwrap();
                         let idx = values.pop().unwrap();
                         let list = values.pop().unwrap();
@@ -797,7 +796,7 @@ impl Default for Env {
                 vec![Type::List,Type::List],
                 (
                     vec![Type::List],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let to_append = values.pop().unwrap();
                         let orig  = values.pop().unwrap();
 
@@ -819,7 +818,7 @@ impl Default for Env {
                 vec![Type::Set,Type::Set],
                 (
                     vec![Type::Set],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let to_append = values.pop().unwrap();
                         let orig  = values.pop().unwrap();
 
@@ -841,7 +840,7 @@ impl Default for Env {
                 vec![Type::Map,Type::Map],
                 (
                     vec![Type::Map],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let to_append = values.pop().unwrap();
                         let orig  = values.pop().unwrap();
 
@@ -870,7 +869,7 @@ impl Default for Env {
              vec![Type::List,Type::GenericTyp(usize::MAX)],
              (
                  vec![Type::List],
-                 CallType::Fun(Box::new(|values,env,chain_map| {
+                 CallType::Fun(Box::new(|values,_env,_chain_map| {
                      let elem = values.pop().unwrap();
                      let list = values.pop().unwrap();
                      match (list, elem) {
@@ -889,7 +888,7 @@ impl Default for Env {
              vec![Type::Set,Type::GenericTyp(usize::MAX)],
              (
                  vec![Type::Set],
-                 CallType::Fun(Box::new(|values,env,chain_map| {
+                 CallType::Fun(Box::new(|values,_env,_chain_map| {
                      let elem = values.pop().unwrap();
                      let list = values.pop().unwrap();
                      match (list, elem) {
@@ -915,7 +914,7 @@ impl Default for Env {
              vec![Type::List,Type::GenericTyp(usize::MAX)],
              (
                  vec![Type::List],
-                 CallType::Fun(Box::new(|values,env,chain_map| {
+                 CallType::Fun(Box::new(|values,_env,_chain_map| {
                      let elem = values.pop().unwrap();
                      let list = values.pop().unwrap();
                      match (list, elem) {
@@ -934,7 +933,7 @@ impl Default for Env {
              vec![Type::Set,Type::GenericTyp(usize::MAX)],
              (
                  vec![Type::Set],
-                 CallType::Fun(Box::new(|values,env,chain_map| {
+                 CallType::Fun(Box::new(|values,_env,_chain_map| {
                      let elem = values.pop().unwrap();
                      let list = values.pop().unwrap();
                      match (list, elem) {
@@ -960,7 +959,7 @@ impl Default for Env {
              vec![Type::List,Type::GenericTyp(usize::MAX)],
              (
                  vec![Type::GenericTyp(usize::MAX)],
-                 CallType::Fun(Box::new(|values,env,chain_map| {
+                 CallType::Fun(Box::new(|values,_env,_chain_map| {
                      let list = values.pop().unwrap();
                      match list {
                          Values::List(mut data) => {
@@ -983,7 +982,7 @@ impl Default for Env {
              vec![Type::Set,Type::GenericTyp(usize::MAX)],
              (
                  vec![Type::GenericTyp(usize::MAX)],
-                 CallType::Fun(Box::new(|values,env,chain_map| {
+                 CallType::Fun(Box::new(|values,_env,_chain_map| {
                      let list = values.pop().unwrap();
                      match list {
                          Values::Set(mut data) => {
@@ -1013,7 +1012,7 @@ impl Default for Env {
              vec![Type::List,Type::GenericTyp(usize::MAX)],
              (
                  vec![Type::GenericTyp(usize::MAX)],
-                 CallType::Fun(Box::new(|values,env,chain_map| {
+                 CallType::Fun(Box::new(|values,_env,_chain_map| {
                      let list = values.pop().unwrap();
                      match list {
                          Values::List(mut data) => {
@@ -1036,7 +1035,7 @@ impl Default for Env {
              vec![Type::Set,Type::GenericTyp(usize::MAX)],
              (
                  vec![Type::GenericTyp(usize::MAX)],
-                 CallType::Fun(Box::new(|values,env,chain_map| {
+                 CallType::Fun(Box::new(|values,_env,_chain_map| {
                      let list = values.pop().unwrap();
                      match list {
                          Values::Set(mut data) => {
@@ -1066,7 +1065,7 @@ impl Default for Env {
                 vec![Type::List,Type::Integer],
                 (
                     vec![Type::List],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let idx = values.pop().unwrap();
                         let list = values.pop().unwrap();
 
@@ -1092,7 +1091,7 @@ impl Default for Env {
                 vec![Type::Set,Type::GenericTyp(usize::MAX)],
                 (
                     vec![Type::Set],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let idx = values.pop().unwrap();
                         let list = values.pop().unwrap();
 
@@ -1114,7 +1113,7 @@ impl Default for Env {
                 vec![Type::Map,Type::GenericTyp(usize::MAX)],
                 (
                     vec![Type::Map],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let idx = values.pop().unwrap();
                         let list = values.pop().unwrap();
 
@@ -1144,7 +1143,7 @@ impl Default for Env {
                 vec![Type::List,Type::Integer,Type::GenericTyp(usize::MAX)],
                 (
                     vec![Type::List],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let new_elem = values.pop().unwrap();
 
                         let idx = values.pop().unwrap();
@@ -1171,7 +1170,7 @@ impl Default for Env {
                 vec![Type::Map,Type::GenericTyp(usize::MAX),Type::GenericTyp(usize::MAX)],
                 (
                     vec![Type::Map],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let new_elem = values.pop().unwrap();
 
                         let idx = values.pop().unwrap();
@@ -1202,7 +1201,7 @@ impl Default for Env {
                 vec![Type::List],
                 (
                     vec![Type::List,Type::Integer],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let list = values.pop().unwrap();
                         match list {
                             Values::List(data) => {
@@ -1221,7 +1220,7 @@ impl Default for Env {
                 vec![Type::Set],
                 (
                     vec![Type::Set,Type::Integer],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let list = values.pop().unwrap();
                         match list {
                             Values::Set(data) => {
@@ -1240,7 +1239,7 @@ impl Default for Env {
                 vec![Type::Map],
                 (
                     vec![Type::Map,Type::Integer],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let list = values.pop().unwrap();
                         match list {
                             Values::Map(data) => {
@@ -1267,7 +1266,7 @@ impl Default for Env {
                 vec![Type::List,Type::GenericTyp(usize::MAX)],
                 (
                     vec![Type::List,Type::Bool],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                     let elem = values.pop().unwrap();
                 let list = values.pop().unwrap();
 
@@ -1288,7 +1287,7 @@ impl Default for Env {
                 vec![Type::Set,Type::GenericTyp(usize::MAX)],
                 (
                     vec![Type::Set,Type::Bool],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                     let elem = values.pop().unwrap();
                 let list = values.pop().unwrap();
 
@@ -1309,7 +1308,7 @@ impl Default for Env {
                 vec![Type::Map,Type::GenericTyp(usize::MAX)],
                 (
                     vec![Type::Map,Type::Bool],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                     let elem = values.pop().unwrap();
                 let list = values.pop().unwrap();
 
@@ -1340,7 +1339,7 @@ impl Default for Env {
                 vec![Type::Set,Type::Set],
                 (
                     vec![Type::Set],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let to_append = values.pop().unwrap();
                         let orig  = values.pop().unwrap();
                         match (orig, to_append) {
@@ -1369,7 +1368,7 @@ impl Default for Env {
                 vec![Type::Set,Type::Set],
                 (
                     vec![Type::Set],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let to_append = values.pop().unwrap();
                         let orig  = values.pop().unwrap();
                         match (orig, to_append) {
@@ -1399,7 +1398,7 @@ impl Default for Env {
                 vec![Type::Set,Type::Set],
                 (
                     vec![Type::Set],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let to_append = values.pop().unwrap();
                         let orig  = values.pop().unwrap();
                         match (orig, to_append) {
@@ -1429,7 +1428,7 @@ impl Default for Env {
                 vec![Type::Set,Type::Set],
                 (
                     vec![Type::Set],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let to_append = values.pop().unwrap();
                         let orig  = values.pop().unwrap();
                         match (orig, to_append) {
@@ -1459,7 +1458,7 @@ impl Default for Env {
                 vec![Type::Set,Type::Set],
                 (
                     vec![Type::Set],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let to_append = values.pop().unwrap();
                         let orig  = values.pop().unwrap();
                         match (orig, to_append) {
@@ -1489,7 +1488,7 @@ impl Default for Env {
                 vec![Type::Set,Type::Set],
                 (
                     vec![Type::Set],
-                    CallType::Fun(Box::new(|values,env,chain_map| {
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
                         let to_append = values.pop().unwrap();
                         let orig  = values.pop().unwrap();
                         match (orig, to_append) {
@@ -1524,7 +1523,7 @@ impl Default for Env {
                         if let Values::Stack(stack) = values.pop().unwrap() {
                             match stack.to_owned().eval(values, env, chain_map) {
                                 Ok(Flow::Ret | Flow::Break) => Ok(()),
-                                ret @ Ok(_) => {
+                                _ret @ Ok(_) => {
                                     Ok(())
                                 }
                                 Err(_) => {

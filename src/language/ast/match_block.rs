@@ -237,7 +237,7 @@ impl Pattern {
                 vars.insert(*var, x.to_owned());
                 Flow::Ok
             }
-            (Pattern::TypeSet(SetPattern::FullSet(pats)), Values::Set(mut x)) => {
+            (Pattern::TypeSet(SetPattern::FullSet(pats)), Values::Set(x)) => {
                 /*for pat in pats {
                     match x.pop_first().map(|x| pat.pattern_match(x, vars)) {
                         None => return Flow::Cont,
@@ -271,7 +271,7 @@ impl Pattern {
                     Flow::Cont
                 }
             }
-            (Pattern::TypeSet(SetPattern::Front(pats, Some(rest_name))), Values::Set(mut x)) => {
+            (Pattern::TypeSet(SetPattern::Front(pats, Some(rest_name))), Values::Set(x)) => {
                 /*for pat in start {
                     match x.pop_front().map(|x| pat.pattern_match(x, vars)) {
                         None => return Flow::Cont,
@@ -311,7 +311,7 @@ impl Pattern {
 
                 Flow::Ok
             }
-            (Pattern::TypeSet(SetPattern::Front(pats, None)), Values::Set(mut x)) => {
+            (Pattern::TypeSet(SetPattern::Front(pats, None)), Values::Set(x)) => {
                 /*for pat in start {
                     match x.pop_front().map(|x| pat.pattern_match(x, vars)) {
                         None => return Flow::Cont,

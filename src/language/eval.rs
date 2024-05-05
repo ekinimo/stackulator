@@ -69,7 +69,7 @@ impl Values{
             Values::List(_) => "list",
             Values::Set(_) => "set",
             Values::Map(_) => "map",
-            Values::Custom { name, tag, values } => "",
+            Values::Custom { name: _, tag: _, values: _ } => "",
         }
     }
 
