@@ -247,6 +247,7 @@ impl Eval<Flow> for Primitives {
                 }
                 if let Values::Stack(stack) = values.pop().unwrap() {
                     match stack.to_owned().eval(values, env, vars) {
+                        Ok(Flow::Ret | Flow::Break) => Ok(Flow::Ok),
                         ret @ Ok(_) => {
                             ret
                         }

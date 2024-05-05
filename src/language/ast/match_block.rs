@@ -20,6 +20,13 @@ pub enum SetPattern {
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Ord, Eq)]
+pub enum TypePattern {
+    All(Option<usize>),
+    FullList(Vec<Pattern>),
+    StartEnd(Vec<Pattern>, Option<usize>, Vec<Pattern>),
+}
+
+#[derive(Debug, Clone, PartialEq, PartialOrd, Ord, Eq)]
 pub enum Pattern {
     Bool(bool),
     TypeBool(Option<usize>),
@@ -33,45 +40,72 @@ pub enum Pattern {
     TypeList(ListPattern),
     TypeSet(SetPattern),
     TypeMap(Option<usize>),
+    NamedStruct(usize, TypePattern),
+    NamedVariant(usize, usize, TypePattern),
 
     Variable(usize),
     DontCare,
 }
 
 impl Pattern {
-
-    pub fn get_defined_vars(&self) -> Vec<usize>{
-        use ListPattern::{*};
-        use Pattern::{*};
+    pub fn get_defined_vars(&self) -> Vec<usize> {
+        use ListPattern::*;
+        use Pattern::*;
         match self {
             TypeBool(Some(i)) => vec![*i],
             TypeInt(Some(i)) => vec![*i],
             TypeFloat(Some(i)) => vec![*i],
             TypeStack(Some(i)) => vec![*i],
-            TypeList(All(Some(i))) => vec![*i],
-            TypeList(FullList(v)) => v.iter().flat_map(|v| v.get_defined_vars().into_iter()).collect(),
-            TypeList(StartEnd(start,middle,end)) =>
-                start
+            NamedStruct(_, TypePattern::All(Some(i))) => vec![*i],
+            NamedStruct(_, TypePattern::FullList(v)) => v
+                .iter()
+                .flat_map(|v| v.get_defined_vars().into_iter())
+                .collect(),
+            NamedStruct(_, TypePattern::StartEnd(start, middle, end)) => start
                 .iter()
                 .chain(end)
                 .flat_map(|v| v.get_defined_vars().into_iter())
                 .chain(middle.iter().cloned())
                 .collect(),
-            TypeSet(SetPattern::All(Some(i)))=> vec![*i],
-            TypeSet(SetPattern::FullSet(v)) => v.iter().flat_map(|v| v.get_defined_vars().into_iter()).collect(),
-            TypeSet(SetPattern::Front (start, name)) =>
-                start
+            NamedVariant(_, _, TypePattern::All(Some(i))) => vec![*i],
+            NamedVariant(_, _, TypePattern::FullList(v)) => v
+                .iter()
+                .flat_map(|v| v.get_defined_vars().into_iter())
+                .collect(),
+            NamedVariant(_, _, TypePattern::StartEnd(start, middle, end)) => start
+                .iter()
+                .chain(end)
+                .flat_map(|v| v.get_defined_vars().into_iter())
+                .chain(middle.iter().cloned())
+                .collect(),
+
+            TypeList(All(Some(i))) => vec![*i],
+            TypeList(FullList(v)) => v
+                .iter()
+                .flat_map(|v| v.get_defined_vars().into_iter())
+                .collect(),
+            TypeList(StartEnd(start, middle, end)) => start
+                .iter()
+                .chain(end)
+                .flat_map(|v| v.get_defined_vars().into_iter())
+                .chain(middle.iter().cloned())
+                .collect(),
+
+            TypeSet(SetPattern::All(Some(i))) => vec![*i],
+            TypeSet(SetPattern::FullSet(v)) => v
+                .iter()
+                .flat_map(|v| v.get_defined_vars().into_iter())
+                .collect(),
+            TypeSet(SetPattern::Front(start, name)) => start
                 .iter()
                 .flat_map(|v| v.get_defined_vars().into_iter())
                 .chain(name.iter().cloned())
                 .collect(),
-            
+
             TypeMap(_) => todo!(),
             Variable(i) => vec![*i],
-            _ => vec![]
+            _ => vec![],
         }
-        
-        
     }
     pub fn pattern_match(&self, val: Values, vars: &mut ChainMap) -> Flow {
         dbg!((self, &val));
@@ -110,6 +144,47 @@ impl Pattern {
                 vars.insert(*var, x.to_owned());
                 Flow::Ok
             }
+
+            (
+                Pattern::NamedStruct(name, TypePattern::All(None)),
+                Values::Custom {
+                    name: name2,
+                    tag: None,
+                    values: _,
+                },
+            ) if *name == name2 => Flow::Ok,
+            (
+                Pattern::NamedStruct(name, TypePattern::All(Some(var))),
+                Values::Custom {
+                    name: name2,
+                    tag: None,
+                    values: Some(x),
+                },
+            ) if *name == name2 => {
+                vars.insert(*var, Values::List(x.to_owned()));
+                Flow::Ok
+            }
+
+            (
+                Pattern::NamedVariant(name, tag, TypePattern::All(None)),
+                Values::Custom {
+                    name: name2,
+                    tag: Some(tag1),
+                    values: _,
+                },
+            ) if *name == name2 && *tag == tag1 => Flow::Ok,
+            (
+                Pattern::NamedVariant(name, tag, TypePattern::All(Some(var))),
+                Values::Custom {
+                    name: name2,
+                    tag: Some(tag2),
+                    values: Some(x),
+                },
+            ) if *name == name2 && *tag == tag2 => {
+                vars.insert(*var, Values::List(x.to_owned()));
+                Flow::Ok
+            }
+
             (Pattern::TypeList(ListPattern::FullList(pats)), Values::List(mut x)) => {
                 for pat in pats {
                     match x.pop_front().map(|x| pat.pattern_match(x, vars)) {
@@ -144,7 +219,7 @@ impl Pattern {
                         _ => (),
                     }
                 }
-               
+
                 for pat in end.iter().rev() {
                     match x.pop_back().map(|x| pat.pattern_match(x, vars)) {
                         None => return Flow::Cont,
@@ -173,25 +248,28 @@ impl Pattern {
                 let mut x = x.clone();
                 let mut rest = BTreeSet::new();
                 pats.sort();
-                for pat in pats{
-                    loop{
+                for pat in pats {
+                    loop {
                         match x.pop_first() {
                             Some(x) => {
-                                if matches!(pat.pattern_match(x.clone(), vars), Flow::Cont){
+                                if matches!(pat.pattern_match(x.clone(), vars), Flow::Cont) {
                                     rest.insert(x);
-                                }else{
-                                    break
+                                } else {
+                                    break;
                                 }
-                            },
-                            None => {return Flow::Cont;},
+                            }
+                            None => {
+                                return Flow::Cont;
+                            }
                         }
-                        x=rest.clone();
+                        x = rest.clone();
                     }
                 }
-                if rest.is_empty(){
-
-                Flow::Ok
-                }else{Flow::Cont}
+                if rest.is_empty() {
+                    Flow::Ok
+                } else {
+                    Flow::Cont
+                }
             }
             (Pattern::TypeSet(SetPattern::Front(pats, Some(rest_name))), Values::Set(mut x)) => {
                 /*for pat in start {
@@ -209,32 +287,31 @@ impl Pattern {
                  */
                 let mut pats = pats.clone();
                 let mut x = x.clone();
-                
+
                 let mut rest = BTreeSet::new();
                 pats.sort();
-                for pat in pats{
-                    loop{
+                for pat in pats {
+                    loop {
                         match x.pop_first() {
                             Some(x) => {
-                                if matches!(pat.pattern_match(x.clone(), vars), Flow::Cont){
+                                if matches!(pat.pattern_match(x.clone(), vars), Flow::Cont) {
                                     rest.insert(x);
-                                }else{
-                                    break
+                                } else {
+                                    break;
                                 }
-                            },
-                            None => {return Flow::Cont;},
+                            }
+                            None => {
+                                return Flow::Cont;
+                            }
                         }
-                        x=rest.clone();
+                        x = rest.clone();
                     }
                 }
                 vars.insert(*rest_name, Values::Set(rest));
-                
-                    Flow::Ok
+
+                Flow::Ok
             }
-            (
-                Pattern::TypeSet(SetPattern::Front(pats, None)),
-                Values::Set(mut x),
-            ) => {
+            (Pattern::TypeSet(SetPattern::Front(pats, None)), Values::Set(mut x)) => {
                 /*for pat in start {
                     match x.pop_front().map(|x| pat.pattern_match(x, vars)) {
                         None => return Flow::Cont,
@@ -251,31 +328,164 @@ impl Pattern {
                 */
                 let mut pats = pats.clone();
                 let mut x = x.clone();
-                
+
                 let mut rest = BTreeSet::new();
                 pats.sort();
-                for pat in pats{
-                    loop{
+                for pat in pats {
+                    loop {
                         match x.pop_first() {
                             Some(x) => {
-                                if matches!(pat.pattern_match(x.clone(), vars), Flow::Cont){
+                                if matches!(pat.pattern_match(x.clone(), vars), Flow::Cont) {
                                     rest.insert(x);
-                                }else{
-                                    break
+                                } else {
+                                    break;
                                 }
-                            },
-                            None => {return Flow::Cont;},
+                            }
+                            None => {
+                                return Flow::Cont;
+                            }
                         }
-                        x=rest.clone();
+                        x = rest.clone();
                     }
                 }
                 //vars.insert(*rest_name, Values::Set(rest));
-                
+
                 Flow::Ok
             }
 
+            (
+                Pattern::NamedStruct(pat_name, TypePattern::FullList(pats)),
+                Values::Custom {
+                    name,
+                    tag: None,
+                    values: Some(mut x),
+                },
+            ) if pat_name == &name => {
+                for pat in pats.iter() {
+                    match x.pop_front().map(|x| pat.pattern_match(x, vars)) {
+                        None => return Flow::Cont,
+                        _ => (),
+                    }
+                }
+                Flow::Ok
+            }
+            (
+                Pattern::NamedStruct(pat_name, TypePattern::StartEnd(start, None, end)),
+                Values::Custom {
+                    name,
+                    tag: None,
+                    values: Some(mut x),
+                },
+            ) if pat_name == &name => {
+                for pat in start {
+                    match x.pop_front().map(|x| pat.pattern_match(x, vars)) {
+                        None => return Flow::Cont,
+                        _ => (),
+                    }
+                }
+                for pat in end {
+                    match x.pop_back().map(|x| pat.pattern_match(x, vars)) {
+                        None => return Flow::Cont,
+                        _ => (),
+                    }
+                }
+                Flow::Ok
+            }
+            (
+                Pattern::NamedStruct(pat_name, TypePattern::StartEnd(start, Some(var), end)),
+                Values::Custom {
+                    name,
+                    tag: None,
+                    values: Some(mut x),
+                },
+            ) if pat_name == &name => {
+                for pat in start {
+                    match x.pop_front().map(|x| pat.pattern_match(x, vars)) {
+                        None => return Flow::Cont,
+                        _ => (),
+                    }
+                }
 
+                for pat in end.iter().rev() {
+                    match x.pop_back().map(|x| pat.pattern_match(x, vars)) {
+                        None => return Flow::Cont,
+                        _ => (),
+                    }
+                }
 
+                dbg!(&x);
+                vars.insert(*var, Values::List(x.to_owned()));
+                Flow::Ok
+            }
+
+            (
+                Pattern::NamedVariant(pat_name, var_name, TypePattern::FullList(pats)),
+                Values::Custom {
+                    name,
+                    tag: Some(var),
+                    values: Some(mut x),
+                },
+            ) if pat_name == &name && var_name == &var => {
+                for pat in pats.iter() {
+                    match x.pop_front().map(|x| pat.pattern_match(x, vars)) {
+                        None => return Flow::Cont,
+                        _ => (),
+                    }
+                }
+                Flow::Ok
+            }
+            (
+                Pattern::NamedVariant(pat_name, var_name, TypePattern::StartEnd(start, None, end)),
+                Values::Custom {
+                    name,
+                    tag: Some(var),
+                    values: Some(mut x),
+                },
+            ) if pat_name == &name && var_name == &var => {
+                for pat in start {
+                    match x.pop_front().map(|x| pat.pattern_match(x, vars)) {
+                        None => return Flow::Cont,
+                        _ => (),
+                    }
+                }
+                for pat in end {
+                    match x.pop_back().map(|x| pat.pattern_match(x, vars)) {
+                        None => return Flow::Cont,
+                        _ => (),
+                    }
+                }
+                Flow::Ok
+            }
+            (
+                Pattern::NamedVariant(
+                    pat_name,
+                    var_name,
+                    TypePattern::StartEnd(start, Some(var), end),
+                ),
+                Values::Custom {
+                    name,
+                    tag: Some(variant),
+                    values: Some(mut x),
+                },
+            ) if pat_name == &name && var_name == &variant => {
+                for pat in start {
+                    match x.pop_front().map(|x| pat.pattern_match(x, vars)) {
+                        None => return Flow::Cont,
+                        _ => (),
+                    }
+                }
+
+                for pat in end.iter().rev() {
+                    match x.pop_back().map(|x| pat.pattern_match(x, vars)) {
+                        None => return Flow::Cont,
+                        _ => (),
+                    }
+                }
+
+                dbg!(&x);
+                vars.insert(*var, Values::List(x.to_owned()));
+                Flow::Ok
+            }
 
             (_, _) => Flow::Cont,
         }
@@ -341,32 +551,39 @@ impl Eval<Flow> for MatchElem {
         ret
     }
 
-    fn get_free_vars(&self,vars:&mut std::collections::HashSet<usize>) {
+    fn get_free_vars(&self, vars: &mut std::collections::HashSet<usize>) {
         self.get_vars(vars);
-        
-        let defined_vars :HashSet<usize>= self.pattern.iter().flat_map(|x| x.get_defined_vars().into_iter()).collect();
+
+        let defined_vars: HashSet<usize> = self
+            .pattern
+            .iter()
+            .flat_map(|x| x.get_defined_vars().into_iter())
+            .collect();
         *vars = vars.difference(&defined_vars).cloned().collect();
     }
 
-    fn get_vars(&self,vars:&mut std::collections::HashSet<usize>) {
-        
+    fn get_vars(&self, vars: &mut std::collections::HashSet<usize>) {
         self.cond.get_vars(vars);
         self.body.get_vars(vars);
-        
     }
 
-    fn replace_vars(self,free_vars:& std::collections::HashSet<usize>,vars:&ChainMap)->Self {
-        let MatchElem { pattern, mut cond, mut body } = self;
+    fn replace_vars(self, free_vars: &std::collections::HashSet<usize>, vars: &ChainMap) -> Self {
+        let MatchElem {
+            pattern,
+            mut cond,
+            mut body,
+        } = self;
         cond = cond.replace_vars(free_vars, vars);
         body = body.replace_vars(free_vars, vars);
-        MatchElem { pattern, cond, body }
+        MatchElem {
+            pattern,
+            cond,
+            body,
+        }
     }
-
-    
 }
 
 impl Eval<Flow> for Match {
-
     fn eval(
         &self,
         values: &mut Vec<Values>,
@@ -395,38 +612,45 @@ impl Eval<Flow> for Match {
         Err(EvalError::NoMatch)
     }
 
-    fn get_free_vars(&self,vars:&mut std::collections::HashSet<usize>) {
-        let ret : HashSet<usize>  = HashSet::new();
-        *vars = self.elems.iter().map(|x| {
-            let mut  vars = vars.clone();
-            x.get_free_vars(&mut vars);
-            vars
-        }).fold(ret, |x,y|{
-            x.union(&y).cloned().collect()
-        });
+    fn get_free_vars(&self, vars: &mut std::collections::HashSet<usize>) {
+        let ret: HashSet<usize> = HashSet::new();
+        *vars = self
+            .elems
+            .iter()
+            .map(|x| {
+                let mut vars = vars.clone();
+                x.get_free_vars(&mut vars);
+                vars
+            })
+            .fold(ret, |x, y| x.union(&y).cloned().collect());
     }
 
-    fn get_vars(&self,vars:&mut std::collections::HashSet<usize>) {
-        let ret : HashSet<usize>  = HashSet::new();
-        *vars = self.elems.iter().map(|x| {
-            let mut  vars = vars.clone();
-            x.get_free_vars(&mut vars);
-            vars
-        }).fold(ret, |x,y|{
-            x.union(&y).cloned().collect()
-        });
+    fn get_vars(&self, vars: &mut std::collections::HashSet<usize>) {
+        let ret: HashSet<usize> = HashSet::new();
+        *vars = self
+            .elems
+            .iter()
+            .map(|x| {
+                let mut vars = vars.clone();
+                x.get_free_vars(&mut vars);
+                vars
+            })
+            .fold(ret, |x, y| x.union(&y).cloned().collect());
     }
 
-    fn replace_vars(self,free_vars:& std::collections::HashSet<usize>,vars:&ChainMap)->Self {
+    fn replace_vars(self, free_vars: &std::collections::HashSet<usize>, vars: &ChainMap) -> Self {
         let elements = self.elems;
-        let elems = elements.into_iter().map(|x| x.replace_vars(free_vars, vars)).collect();
-        Self{elems}
+        let elems = elements
+            .into_iter()
+            .map(|x| x.replace_vars(free_vars, vars))
+            .collect();
+        Self { elems }
     }
 }
 
 use crate::language::ast::Ast;
 use crate::language::parse::{Parse, ParseCtx, Rule};
-use std::collections::{ HashSet, BTreeSet};
+use std::collections::{BTreeSet, HashSet};
 use std::str::FromStr;
 
 impl Parse for Pattern {
@@ -450,36 +674,213 @@ impl Parse for Pattern {
             }
             Rule::listAllDontCarepattern => Pattern::TypeList(ListPattern::All(None)),
             Rule::setAllDontCarepattern => Pattern::TypeSet(SetPattern::All(None)),
-            
+
+            Rule::structAllDontCarepattern => {
+                let mut pairs = pairs.into_inner();
+                let name = ctx.insert_type(pairs.next().unwrap().as_str());
+
+                Pattern::NamedStruct(name, TypePattern::All(None))
+            }
+            Rule::enumAllDontCarepattern => {
+                let mut pairs = pairs.into_inner();
+                let mut pairs = pairs.next().unwrap().into_inner();
+                let name = ctx.insert_type(dbg!(pairs.next().unwrap().as_str()));
+
+                let tag = ctx.insert_tag(dbg!(pairs.next().unwrap().as_str()));
+
+                Pattern::NamedVariant(name, tag, TypePattern::All(None))
+            }
+
+            Rule::structAllpattern => {
+                let mut pairs = pairs.into_inner();
+                let name = ctx.insert_type(pairs.next().unwrap().as_str());
+                let var = ctx.insert_var(pairs.next().unwrap().as_str());
+
+                Pattern::NamedStruct(name, TypePattern::All(Some(var)))
+            }
+            Rule::enumAllpattern => {
+                let mut pair = pairs.into_inner();
+                let mut pairs = pair.next().unwrap().into_inner();
+                let name = ctx.insert_type(dbg!(pairs.next().unwrap().as_str()));
+
+                let tag = ctx.insert_tag(dbg!(pairs.next().unwrap().as_str()));
+                let var = ctx.insert_var(pairs.next().unwrap().as_str());
+
+                Pattern::NamedVariant(name, tag, TypePattern::All(Some(var)))
+            }
+
+            Rule::structFullPattern => {
+                let mut pairs = pairs.into_inner();
+                let name = ctx.insert_type(pairs.next().unwrap().as_str());
+                Pattern::NamedStruct(
+                    name,
+                    TypePattern::FullList(pairs.map(|x| Self::parse(x, ctx)).collect()),
+                )
+            }
+
+            Rule::enumFullPattern => {
+                let mut pairs = pairs.into_inner();
+                let mut names = pairs.next().unwrap().into_inner();
+                let name = ctx.insert_type(dbg!(names.next().unwrap().as_str()));
+
+                let tag = ctx.insert_tag(dbg!(names.next().unwrap().as_str()));
+
+                Pattern::NamedVariant(
+                    name,
+                    tag,
+                    TypePattern::FullList(pairs.map(|x| Self::parse(x, ctx)).collect()),
+                )
+            }
+
+            Rule::structStartEnd => {
+                let mut inner = pairs.into_inner();
+                let struct_name = ctx.insert_type(inner.next().unwrap().as_str());
+                let mut start = vec![];
+                let mut end = vec![];
+                let mut name = None;
+                let mut has_seen = false;
+                for val in inner {
+                    match val.as_rule() {
+                        Rule::manyvar => {
+                            name = Some(val);
+                            has_seen = true;
+                        }
+
+                        _ => {
+                            if !has_seen {
+                                start.push(Self::parse(val, ctx));
+                            } else {
+                                end.push(Self::parse(val, ctx));
+                            }
+                        }
+                    }
+                }
+
+                Pattern::NamedStruct(
+                    struct_name,
+                    TypePattern::StartEnd(
+                        start,
+                        Some(ctx.insert_var(&name.unwrap().as_str()[1..])),
+                        end,
+                    ),
+                )
+            }
+
+            Rule::enumStartEnd => {
+                let mut inner = pairs.into_inner();
+                let mut names = inner.next().unwrap().into_inner();
+                let enum_name = ctx.insert_type(dbg!(names.next().unwrap().as_str()));
+
+                let tag = ctx.insert_tag(dbg!(names.next().unwrap().as_str()));
+
+                let mut start = vec![];
+                let mut end = vec![];
+                let mut name = None;
+                let mut has_seen = false;
+                for val in inner {
+                    match val.as_rule() {
+                        Rule::manyvar => {
+                            name = Some(val);
+                            has_seen = true;
+                        }
+
+                        _ => {
+                            if !has_seen {
+                                start.push(Self::parse(val, ctx));
+                            } else {
+                                end.push(Self::parse(val, ctx));
+                            }
+                        }
+                    }
+                }
+
+                Pattern::NamedVariant(
+                    enum_name,
+                    tag,
+                    TypePattern::StartEnd(
+                        start,
+                        Some(ctx.insert_var(&name.unwrap().as_str()[1..])),
+                        end,
+                    ),
+                )
+            }
+
+            Rule::structStartEndDontCare => {
+                let mut inner = pairs.into_inner();
+                let struct_name = ctx.insert_type(inner.next().unwrap().as_str());
+                let mut start = vec![];
+                let mut end = vec![];
+                let mut has_seen = false;
+                for val in inner {
+                    match val.as_rule() {
+                        Rule::many => {
+                            has_seen = true;
+                        }
+
+                        _ => {
+                            if !has_seen {
+                                start.push(Self::parse(val, ctx));
+                            } else {
+                                end.push(Self::parse(val, ctx));
+                            }
+                        }
+                    }
+                }
+
+                Pattern::NamedStruct(struct_name, TypePattern::StartEnd(start, None, end))
+            }
+
+            Rule::enumStartEndDontCare => {
+                let mut inner = pairs.into_inner();
+                let mut names = inner.next().unwrap().into_inner();
+                let enum_name = ctx.insert_type(dbg!(names.next().unwrap().as_str()));
+
+                let tag = ctx.insert_tag(dbg!(names.next().unwrap().as_str()));
+
+                let mut start = vec![];
+                let mut end = vec![];
+                let mut has_seen = false;
+                for val in inner {
+                    match val.as_rule() {
+                        Rule::many => {
+                            has_seen = true;
+                        }
+
+                        _ => {
+                            if !has_seen {
+                                start.push(Self::parse(val, ctx));
+                            } else {
+                                end.push(Self::parse(val, ctx));
+                            }
+                        }
+                    }
+                }
+
+                Pattern::NamedVariant(enum_name, tag, TypePattern::StartEnd(start, None, end))
+            }
+
             Rule::listFullPattern => Pattern::TypeList(ListPattern::FullList(
-                pairs
-                    .into_inner()
-                    .map(|x| Self::parse(x, ctx))
-                    .collect(),
+                pairs.into_inner().map(|x| Self::parse(x, ctx)).collect(),
             )),
 
             Rule::setFullPattern => Pattern::TypeSet(SetPattern::FullSet(
-                pairs
-                    .into_inner()
-                    .map(|x| Self::parse(x, ctx))
-                    .collect(),
+                pairs.into_inner().map(|x| Self::parse(x, ctx)).collect(),
             )),
             Rule::listStart => {
-                let  inner = pairs.into_inner();
+                let inner = pairs.into_inner();
                 let mut start = vec![];
                 let mut name = None;
 
-                for val in inner{
+                for val in inner {
                     match val.as_rule() {
                         Rule::manyvar => {
-                            name=Some(val);
+                            name = Some(val);
                             break;
                         }
-                        
-                        _ =>     start.push(Self::parse(val, ctx)),
-                    }
 
-                } 
+                        _ => start.push(Self::parse(val, ctx)),
+                    }
+                }
                 Pattern::TypeList(ListPattern::StartEnd(
                     start,
                     Some(ctx.insert_var(&name.unwrap().as_str()[1..])),
@@ -487,41 +888,35 @@ impl Parse for Pattern {
                 ))
             }
             Rule::listStartDontCare => {
-                let  inner = pairs.into_inner();
+                let inner = pairs.into_inner();
                 let mut start = vec![];
-                for val in inner{
+                for val in inner {
                     match val.as_rule() {
                         Rule::many => {
                             //name=Some(val);
                             break;
                         }
-                        
-                        _ =>     start.push(Self::parse(val, ctx)),
-                    }
 
+                        _ => start.push(Self::parse(val, ctx)),
+                    }
                 }
 
-                Pattern::TypeList(ListPattern::StartEnd(
-                    start,
-                    None,
-                    vec![],
-                ))
+                Pattern::TypeList(ListPattern::StartEnd(start, None, vec![]))
             }
             Rule::listEnd => {
-                let  inner = pairs.into_inner();
+                let inner = pairs.into_inner();
                 let mut start = vec![];
                 let mut name = None;
 
-                for val in inner{
+                for val in inner {
                     match val.as_rule() {
                         Rule::manyvar => {
-                            name=Some(val);
+                            name = Some(val);
                         }
-                        
-                        _ =>     start.push(Self::parse(val, ctx)),
-                    }
 
-                } 
+                        _ => start.push(Self::parse(val, ctx)),
+                    }
+                }
 
                 Pattern::TypeList(ListPattern::StartEnd(
                     vec![],
@@ -530,127 +925,115 @@ impl Parse for Pattern {
                 ))
             }
             Rule::listEndDontCare => {
-                let  inner = pairs.into_inner();
+                let inner = pairs.into_inner();
                 let mut start = vec![];
-                for val in inner{
+                for val in inner {
                     match val.as_rule() {
                         Rule::many => {
                             //name=Some(val);
                         }
-                        
-                        _ =>     start.push(Self::parse(val, ctx)),
-                    }
 
+                        _ => start.push(Self::parse(val, ctx)),
+                    }
                 }
 
-                Pattern::TypeList(ListPattern::StartEnd(
-                    vec![],
-                    None,
-                    start
-                ))
+                Pattern::TypeList(ListPattern::StartEnd(vec![], None, start))
             }
 
             Rule::listStartEnd => {
-                let  inner = pairs.into_inner();
+                let inner = pairs.into_inner();
                 let mut start = vec![];
                 let mut end = vec![];
                 let mut name = None;
                 let mut has_seen = false;
-                for val in inner{
+                for val in inner {
                     match val.as_rule() {
                         Rule::manyvar => {
-                            name=Some(val);
+                            name = Some(val);
                             has_seen = true;
                         }
-                        
-                        _ =>{
-                            if !has_seen{
+
+                        _ => {
+                            if !has_seen {
                                 start.push(Self::parse(val, ctx));
-                            }else{
+                            } else {
                                 end.push(Self::parse(val, ctx));
                             }
                         }
                     }
-                } 
-                
+                }
+
                 Pattern::TypeList(ListPattern::StartEnd(
                     start,
                     Some(ctx.insert_var(&name.unwrap().as_str()[1..])),
-                    end
+                    end,
                 ))
             }
 
             Rule::setFront => {
-                let  inner = pairs.into_inner();
+                let inner = pairs.into_inner();
                 let mut start = vec![];
-                
+
                 let mut name = None;
-                for val in inner{
+                for val in inner {
                     match val.as_rule() {
                         Rule::manyvar => {
-                            name=Some(val);
+                            name = Some(val);
                         }
-                        _ =>{
-                                start.push(Self::parse(val, ctx));
+                        _ => {
+                            start.push(Self::parse(val, ctx));
                         }
                     }
-                } 
-                
+                }
+
                 Pattern::TypeSet(SetPattern::Front(
                     start,
                     Some(ctx.insert_var(&name.unwrap().as_str()[1..])),
-                    
                 ))
             }
             Rule::listStartEndDontCare => {
-                let  inner = pairs.into_inner();
+                let inner = pairs.into_inner();
                 let mut start = vec![];
                 let mut end = vec![];
                 let mut has_seen = false;
-                for val in inner{
+                for val in inner {
                     match val.as_rule() {
                         Rule::many => {
                             has_seen = true;
                         }
-                        
-                        _ =>{
-                            if !has_seen{
+
+                        _ => {
+                            if !has_seen {
                                 start.push(Self::parse(val, ctx));
-                            }else{
+                            } else {
                                 end.push(Self::parse(val, ctx));
                             }
                         }
                     }
-                } 
+                }
 
-                Pattern::TypeList(ListPattern::StartEnd(
-                    start,
-                    None,
-                    end
-                ))
+                Pattern::TypeList(ListPattern::StartEnd(start, None, end))
             }
             Rule::setFrontDontCare => {
-                let  inner = pairs.into_inner();
+                let inner = pairs.into_inner();
                 let mut start = vec![];
-                
-                for val in inner{
+
+                for val in inner {
                     match val.as_rule() {
-                        Rule::manyvar => {
-                        }
-                        _ =>{
+                        Rule::manyvar => {}
+                        _ => {
                             start.push(Self::parse(val, ctx));
                         }
                     }
-                } 
-                
-                Pattern::TypeSet(SetPattern::Front(
-                    start,
-                    None,
-                    
-                ))
+                }
+
+                Pattern::TypeSet(SetPattern::Front(start, None))
             }
 
-            _ => unreachable!(),
+            x => {
+                dbg!(x);
+                unreachable!()
+            }
         }
     }
 }
@@ -730,6 +1113,8 @@ impl Representation<(), ParseCtx> for Pattern {
             Pattern::TypeList(_) => todo!(),
             Pattern::TypeSet(_) => todo!(),
             Pattern::TypeMap(_) => todo!(),
+            Pattern::NamedStruct(_, _) => todo!(),
+            Pattern::NamedVariant(_, _, _) => todo!(),
         }
     }
 }

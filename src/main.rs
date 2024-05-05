@@ -8,7 +8,7 @@ use iced::{
     widget::{
         self, column, container, horizontal_rule, horizontal_space, row, scrollable, text,
         text_editor::{self, Content},
-        vertical_rule,
+        vertical_rule, vertical_space,
     },
     Application, Command, Event, Font, Settings, Theme,
 };
@@ -229,12 +229,74 @@ impl Application for App {
                 .into()
             }),
         )));
+        let structs = container(scrollable(widget::column(
+            self.vm.get_structs().iter().map(|(name, body)| {
+                row!(
+                    container(text(" struct ")),
+                    container(text(name)),
+                    container(text("{ ")),
+                    scrollable(widget::column(
+                        body.iter().map(|x| container(text(x)).padding(10).into())
+                            .chain(Some( container(text("}")).into()).into_iter())
+                    )),
+
+
+                )
+                    .into()
+            }),
+        )));
+
+        let enums = container(scrollable(widget::column(
+            self.vm.get_enums().iter().map(|(name, body)| {
+                row!(
+                    container(text(" enum ")),
+                    container(text(name)),
+                    container(text(" { ")),
+                    scrollable(widget::column(
+                        body.iter().map(|(x,body)|
+                                        row![
+                                            container(text("| ")),
+                                            container(text(x)),
+                                            container(text("(")),
+                                            scrollable(widget::column(
+                                                    body.iter().map(|x| container(text(x))
+                                                                    .padding(10).into())
+                                                    .chain(Some( container(text(")")).into()).into_iter())
+
+                                                )),
+
+                                        ].padding(10).into())
+
+                            .chain(Some( container(text("}")).into()).into_iter())
+
+                    )
+
+                    )
+                )
+                    .into()
+            }),
+        )));
+
+
         column![
             row![
                 horizontal_space(),
                 value_stack,
                 vertical_rule(30),
-                definitions,
+                column![
+                    vertical_space(),
+                    definitions,
+                    horizontal_rule(20),
+                    row![
+                        horizontal_space(),
+
+                        structs,
+                        vertical_rule(20),
+                        enums,
+                        horizontal_space(),
+
+                    ]
+                 ],
                 horizontal_space(),
             ],
             horizontal_rule(30),

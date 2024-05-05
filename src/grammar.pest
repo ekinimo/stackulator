@@ -49,6 +49,7 @@ primitives             = {
 lowercase              = _{'a' .. 'z'}
 uppercase              = _{'A' .. 'Z'}
 funName                = @{lowercase ~ (lowercase | uppercase | zero |nonZero | "_" )* }
+
 varName                = @{"_" ~ lowercase ~ (lowercase | uppercase | zero |nonZero | "_" )*  }
 
 takeVars               = {"|" ~ varName+  ~"|" }
@@ -96,6 +97,7 @@ listPattern            = _{
 
 }
 
+
 setAllpattern          = { "Set" ~ "(" ~ manyvar ~ ")"}
 setAllDontCarepattern  = { "Set" ~ "(" ~ many ~ ")"}
 setFullPattern         = { "Set" ~ "(" ~ pattern* ~ ")"}
@@ -112,9 +114,38 @@ setFrontDontCare
 
 }
 
-pattern                = _{ varName | num | dontCare | bools
+enumAllpattern          = { variantName ~  "(" ~ manyvar ~ ")"}
+enumAllDontCarepattern  = { variantName ~ "(" ~ many ~ ")"}
+enumFullPattern         = { variantName ~ "(" ~ pattern* ~ ")"}
+enumStartEnd           =  { variantName ~ "(" ~ pattern+ ~ manyvar ~ pattern+  ~ ")"}
+enumStartEndDontCare   =  { variantName ~ "(" ~ pattern+ ~ many ~ pattern+  ~ ")"}
 
-| intPattern             
+
+enumPattern = _{ enumAllpattern         
+|enumAllDontCarepattern 
+|enumFullPattern        
+|enumStartEnd           
+|enumStartEndDontCare   }
+
+
+
+structAllpattern          = { typName ~ "(" ~ manyvar ~ ")"}
+structAllDontCarepattern  = { typName ~ "(" ~ many ~ ")"}
+structFullPattern         = { typName ~ "(" ~ pattern* ~ ")"}
+structStartEnd           =  { typName ~ "(" ~ pattern+ ~ manyvar ~ pattern+  ~ ")"}
+structStartEndDontCare   =  { typName ~ "(" ~ pattern+ ~ many ~ pattern+  ~ ")"}
+
+
+
+structPattern = _{   structAllpattern         
+                  | structAllDontCarepattern 
+                  | structFullPattern        
+                  | structStartEnd           
+                  | structStartEndDontCare    }
+
+
+pattern                = _{ varName | num | dontCare | bools
+                       | intPattern             
 | ratPattern             
 | boolPattern            
 | stackPattern           
@@ -124,7 +155,8 @@ pattern                = _{ varName | num | dontCare | bools
 | stackDontCarePattern   
 | listPattern
 | setPattern
-
+| enumPattern
+| structPattern
 }
 
 when                   = {"when" ~atom+}
@@ -133,30 +165,52 @@ patterns               = {pattern+}
 matchElem              = { patterns ~ (when)? ~ "=>" ~ matchArm}
 matchBlock             = {  ("|" ~ matchElem ~ ",")+  }
 
-
+variant = @{uppercase ~ (lowercase | uppercase | zero |nonZero | "_" )* }
+variantName           = ${ typName ~ "::" ~ variant }
 
 list                   = { "List" ~ "(" ~atom* ~("," ~ atom+)* ~ ")"  }
 set                    = { "Set" ~ "(" ~atom* ~("," ~ atom+)* ~ ")"  }
 map                    = { "Map" ~ "(" ~atom* ~("," ~ atom+)* ~ ")"  }
+variantInst               = { variantName   ~ "(" ~atom* ~("," ~ atom+)* ~ ")"  }
+typeInst                  = { typName  ~ "(" ~atom* ~("," ~ atom+)* ~ ")"  }
+
 
 atom                   = _{ 
- 	  num | bools | stack | list | set | map 
+ 	  num | bools | stack | list | set | map | variantInst | typeInst  
    | ret | brek | take  | whileLoop | matchBlock | ifTrue
-   | primitives | funName | varName
+   |  funName | varName
 }
 
 insides                = _{atom* }
 
-def                    = {
-funName ~ "=" ~ insides 
+inner_types            = { typ+ }
+
+protocol_def                    = {
+                       funName ~ "(" ~ inner_types ~")" ~ "=" ~ insides 
 }
+
+def                    = {
+                       funName ~ "=" ~ insides 
+}
+
+typName                = @{uppercase ~ (lowercase | uppercase | zero |nonZero | "_" )* }
+genericName            = @{"'" ~ (lowercase | uppercase | zero |nonZero | "_" )* }
+primTyps = { "Bool" | "Int" | "Rat" | "Set" | "List" | "Stack"}
+typ = _{primTyps | genericName | typName   }
+
+structDef = {"struct" ~ typName ~ "{" ~ typ* ~ "}" }
+enumElem = {"|" ~ typName ~ "(" ~ typ*  ~")" }
+enumDef = {"enum" ~ typName ~ "{" ~
+        enumElem* ~
+"}" }
+
 
 expr                   = {atom+ }
 
 justDef                = _{SOI ~ def ~ EOI}
 justExpr               = _{SOI ~ expr ~ EOI}
-justExprOrDef          = _{SOI ~ (def | expr) ~ EOI}
-defsAndExprs           = _{SOI ~ ((def | expr) ~ ";")* ~ EOI}
+justExprOrDef          = _{SOI ~ ( structDef | enumDef | protocol_def | def | expr   ) ~ EOI}
+defsAndExprs           = _{SOI ~ ( (structDef | enumDef  | protocol_def | def | expr  ) ~ ";")* ~ EOI}
 
 
 

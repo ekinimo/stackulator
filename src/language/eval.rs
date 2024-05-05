@@ -1,3 +1,4 @@
+use super::ast::Type;
 use super::ast::primitives::Primitives;
 use super::env::Env;
 use std::collections::{HashMap, VecDeque, BTreeSet, BTreeMap, HashSet};
@@ -30,22 +31,31 @@ pub enum EvalError {
     PrimitiveUnderflow(Primitives),
     PrimitiveTypeErr(Primitives,String),
     PrimitiveEvalErr,
-    MapExprMustHaveListOfLen2
+    MapExprMustHaveListOfLen2,
+
+   TypeDoesntExist(usize),
+   TypeConstructorLenMismatch(usize,usize,usize),
+
+   IndexOutOfBounds,
+    Underflow,
 
 }
 
 use malachite::{Integer, Rational};
+
 
 #[derive(Debug, Clone,PartialEq,PartialOrd,Ord,Eq)]
 pub enum Values {
     Bool(bool),
     Int(Integer),
     Float(Rational),
-
+    
     Stack(super::ast::stack::Stack),
     List(VecDeque<Values> ),
     Set(BTreeSet<Values> ),
     Map(BTreeMap<Values,Values> ),
+
+    Custom{name:usize,tag:Option<usize>, values: Option<VecDeque<Values>>}
 }
 
 impl Values{
@@ -59,6 +69,20 @@ impl Values{
             Values::List(_) => "list",
             Values::Set(_) => "set",
             Values::Map(_) => "map",
+            Values::Custom { name, tag, values } => "",
+        }
+    }
+
+    pub fn get_real_type(&self)->Type{
+        match self{
+            Values::Bool(_) => Type::Bool,
+            Values::Int(_) => Type::Integer,
+            Values::Float(_) => Type::Float,
+            Values::Stack(_) => Type::Stack,
+            Values::List(_) => Type::List,
+            Values::Set(_) => Type::Set,
+            Values::Map(_) => Type::Map,
+            Values::Custom { name, .. } => Type::CustomType(*name),
         }
     }
 }
@@ -114,29 +138,54 @@ impl Representation<(), ParseCtx> for Values {
             Values::List(l) => {
                 let mut ret =  String::new();
                 ret.push_str("List(");
-                l.iter().for_each(|x| {ret.push_str(&x.get_repr(context)); ret.push_str(", ");});
+                let len = l.len();
+                l.iter().enumerate().for_each(|(idx,x)| {ret.push_str(&x.get_repr(context)); if idx != len-1 {ret.push_str(", ");}});
                 ret.push(')');
                 ret
             },
             Values::Set(l) => {
                 let mut ret =  String::new();
+                let len = l.len();
                 ret.push_str("Set(");
-                l.iter().for_each(|x| {ret.push_str(&x.get_repr(context)); ret.push_str(", ");});
+                l.iter().enumerate().for_each(|(idx,x)| {ret.push_str(&x.get_repr(context));
+                                                    if idx != len-1{ret.push_str(", ");}});
                 ret.push(')');
                 ret
             },
             Values::Map(map) => {
                 let mut ret =  String::new();
                 ret.push_str("Map(");
-                map.iter().for_each(|(x,y)| {
+                let len = map.len();
+                map.iter().enumerate().for_each(|(idx,(x,y))| {
                     ret.push_str("[ ");ret.push_str(&x.get_repr(context)); ret.push_str(", "); ret.push_str(&y.get_repr(context));
                     ret.push_str("] ");
+                    if idx != len-1{
                     ret.push_str(", ");
+                    }
                 });
                 ret.push(')');
                 ret
                     
             },
+            Values::Custom { name, tag, values } => {
+                let mut ret =  String::new();
+                ret.push_str(context.lookup_type_name(*name).as_str());
+                tag.map(|tag| {
+                    ret.push_str("::");
+                    ret.push_str( context.lookup_tag_name(tag).as_str())
+                });
+                ret.push('(');
+                values.as_ref().map(|x| {
+                    let len = x.len();
+                    x.iter().enumerate().for_each(|(idx,value)| {
+                    ret.push_str(&value.get_repr(context));
+                        if idx != len-1 {ret.push_str(",");}
+                })});
+
+                ret.push(')');
+                ret
+                    
+            }
             
         }
     }
@@ -198,6 +247,14 @@ impl Representation<(), ParseCtx> for EvalError {
             EvalError::WhileCondUnderFlow => "WhileCondUnderFlow".to_string(),
             EvalError::TakeUnderflow => "TakeUnderflow".to_string(),
             EvalError::MapExprMustHaveListOfLen2 => "MapExprMustHaveListOfLen2".to_string(),
+            EvalError::TypeDoesntExist(x) => {
+                format!("TypeDoesntExist {}", context.lookup_type_name(*x))
+            },
+            EvalError::TypeConstructorLenMismatch(name, expects, got) => {
+                format!("TypeConstructorLenMismatch {} expects {expects} many arguments but got {got}.", context.lookup_type_name(*name))
+            },
+            EvalError::IndexOutOfBounds => todo!(),
+            EvalError::Underflow => format!("Underflow"),
         }
     }
 }
