@@ -45,7 +45,12 @@ impl VM {
                     let expr = Stack {
                         elems: def.map(|x| Ast::parse(x, &mut self.parse_ctx)).collect(),
                     };
-                    if self.env.protocol_arity.contains_key(&fun_name){
+                    if let std::collections::hash_map::Entry::Vacant(e) = self.env.protocol_arity.entry(fun_name) {
+                        e.insert((typs.len(),None));
+                        let mut map = HashMap::new();
+                        map.insert(typs, (vec![],CallType::Stack(expr)));
+                        self.env.protocol_data.insert(fun_name, map);
+                    } else {
                         if self.env.protocol_arity[&fun_name].0 != typs.len(){
                             todo!("Error handling")
                         }
@@ -53,11 +58,6 @@ impl VM {
                             Some(r) => { r.insert(typs, (vec![],CallType::Stack(expr))) ;},
                             None => {unreachable!()},
                         }
-                    }else{
-                        self.env.protocol_arity.insert(fun_name, (typs.len(),None));
-                        let mut map = HashMap::new();
-                        map.insert(typs, (vec![],CallType::Stack(expr)));
-                        self.env.protocol_data.insert(fun_name, map);
                     }
                 }
                 Rule::structDef => {
@@ -117,7 +117,12 @@ impl VM {
                     let expr = Stack {
                         elems: def.map(|x| Ast::parse(x, &mut self.parse_ctx)).collect(),
                     };
-                    if self.env.protocol_arity.contains_key(&fun_name){
+                    if let std::collections::hash_map::Entry::Vacant(e) = self.env.protocol_arity.entry(fun_name) {
+                        e.insert((typs.len(),None));
+                        let mut map = HashMap::new();
+                        map.insert(typs, (vec![],CallType::Stack(expr)));
+                        self.env.protocol_data.insert(fun_name, map);
+                    } else {
                         if self.env.protocol_arity[&fun_name].0 != typs.len(){
                             todo!("Error handling")
                         }
@@ -125,11 +130,6 @@ impl VM {
                             Some(r) => { r.insert(typs, (vec![],CallType::Stack(expr))) ;},
                             None => {unreachable!()},
                         }
-                    }else{
-                        self.env.protocol_arity.insert(fun_name, (typs.len(),None));
-                        let mut map = HashMap::new();
-                        map.insert(typs, (vec![],CallType::Stack(expr)));
-                        self.env.protocol_data.insert(fun_name, map);
                     }
                 }
 

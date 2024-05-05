@@ -179,7 +179,7 @@ impl Representation<(), ParseCtx> for Values {
                     let len = x.len();
                     x.iter().enumerate().for_each(|(idx,value)| {
                     ret.push_str(&value.get_repr(context));
-                        if idx != len-1 {ret.push_str(",");}
+                        if idx != len-1 {ret.push(',');}
                 })});
 
                 ret.push(')');
@@ -254,7 +254,7 @@ impl Representation<(), ParseCtx> for EvalError {
                 format!("TypeConstructorLenMismatch {} expects {expects} many arguments but got {got}.", context.lookup_type_name(*name))
             },
             EvalError::IndexOutOfBounds => todo!(),
-            EvalError::Underflow => format!("Underflow"),
+            EvalError::Underflow => "Underflow".to_string(),
         }
     }
 }

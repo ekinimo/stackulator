@@ -288,7 +288,7 @@ impl Eval<Flow> for Ast {
                             }
                         }
                         dbg!("UNDERFLOOOOOOOW");
-                        return Err(EvalError::Underflow);
+                        Err(EvalError::Underflow)
                     }
 
                     None => Err(EvalError::UndefinedCall(*fun_name)),
@@ -339,7 +339,7 @@ impl Eval<Flow> for Ast {
                                 .all(|(ty, val)| ty.match_values(val, &mut generics));
                         }
                         if ret {
-                            if temp.len() == 0 {
+                            if temp.is_empty() {
                                 values.push(Values::Custom {
                                     name: *typ_name,
                                     tag: *tag,
