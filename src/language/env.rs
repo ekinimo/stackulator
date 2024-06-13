@@ -2,6 +2,8 @@ use std::{
     collections::{HashMap, HashSet},
 };
 
+use malachite::Rational;
+
 use crate::language::ast::stack::Stack;
 
 use super::{
@@ -78,6 +80,36 @@ impl Default for Env {
                     })),
                 ),
             );
+            map.insert(
+                vec![Type::Integer, Type::Float],
+                (
+                    vec![Type::Float],
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
+                        let b = values.pop().unwrap();
+                        let a = values.pop().unwrap();
+                        match (a, b) {
+                            (Values::Int(a), Values::Float(b)) => values.push(Values::Float(Rational::from(a) + b)),
+                            _ => unreachable!(),
+                        }
+                        Ok(())
+                    })),
+                ),
+            );
+            map.insert(
+                vec![Type::Float,Type::Integer],
+                (
+                    vec![Type::Float],
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
+                        let b = values.pop().unwrap();
+                        let a = values.pop().unwrap();
+                        match (a, b) {
+                            (Values::Float(a), Values::Int(b)) => values.push(Values::Float( a+ Rational::from(b) )),
+                            _ => unreachable!(),
+                        }
+                        Ok(())
+                    })),
+                ),
+            );
             ret.protocol_data.insert(fun, map);
             ret.protocol_arity.insert(fun, (2, Some(1)));
         }
@@ -110,6 +142,36 @@ impl Default for Env {
                             (Values::Float(a), Values::Float(b)) => {
                                 values.push(Values::Float(a - b))
                             }
+                            _ => unreachable!(),
+                        }
+                        Ok(())
+                    })),
+                ),
+            );
+            map.insert(
+                vec![Type::Integer, Type::Float],
+                (
+                    vec![Type::Float],
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
+                        let b = values.pop().unwrap();
+                        let a = values.pop().unwrap();
+                        match (a, b) {
+                            (Values::Int(a), Values::Float(b)) => values.push(Values::Float(Rational::from(a) - b)),
+                            _ => unreachable!(),
+                        }
+                        Ok(())
+                    })),
+                ),
+            );
+            map.insert(
+                vec![Type::Float,Type::Integer],
+                (
+                    vec![Type::Float],
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
+                        let b = values.pop().unwrap();
+                        let a = values.pop().unwrap();
+                        match (a, b) {
+                            (Values::Float(a), Values::Int(b)) => values.push(Values::Float( a- Rational::from(b) )),
                             _ => unreachable!(),
                         }
                         Ok(())
@@ -154,6 +216,36 @@ impl Default for Env {
                     })),
                 ),
             );
+            map.insert(
+                vec![Type::Integer, Type::Float],
+                (
+                    vec![Type::Float],
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
+                        let b = values.pop().unwrap();
+                        let a = values.pop().unwrap();
+                        match (a, b) {
+                            (Values::Int(a), Values::Float(b)) => values.push(Values::Float(Rational::from(a) * b)),
+                            _ => unreachable!(),
+                        }
+                        Ok(())
+                    })),
+                ),
+            );
+            map.insert(
+                vec![Type::Float,Type::Integer],
+                (
+                    vec![Type::Float],
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
+                        let b = values.pop().unwrap();
+                        let a = values.pop().unwrap();
+                        match (a, b) {
+                            (Values::Float(a), Values::Int(b)) => values.push(Values::Float( a* Rational::from(b) )),
+                            _ => unreachable!(),
+                        }
+                        Ok(())
+                    })),
+                ),
+            );
             ret.protocol_data.insert(fun, map);
             ret.protocol_arity.insert(fun, (2, Some(1)));
         }
@@ -186,6 +278,36 @@ impl Default for Env {
                             (Values::Float(a), Values::Float(b)) => {
                                 values.push(Values::Float(a / b))
                             }
+                            _ => unreachable!(),
+                        }
+                        Ok(())
+                    })),
+                ),
+            );
+            map.insert(
+                vec![Type::Integer, Type::Float],
+                (
+                    vec![Type::Float],
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
+                        let b = values.pop().unwrap();
+                        let a = values.pop().unwrap();
+                        match (a, b) {
+                            (Values::Int(a), Values::Float(b)) => values.push(Values::Float(Rational::from(a) / b)),
+                            _ => unreachable!(),
+                        }
+                        Ok(())
+                    })),
+                ),
+            );
+            map.insert(
+                vec![Type::Float,Type::Integer],
+                (
+                    vec![Type::Float],
+                    CallType::Fun(Box::new(|values,_env,_chain_map| {
+                        let b = values.pop().unwrap();
+                        let a = values.pop().unwrap();
+                        match (a, b) {
+                            (Values::Float(a), Values::Int(b)) => values.push(Values::Float( a/ Rational::from(b) )),
                             _ => unreachable!(),
                         }
                         Ok(())

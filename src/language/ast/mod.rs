@@ -118,11 +118,20 @@ use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 use std::sync::Arc;
 
+
 impl Parse for Ast {
+
+    
+
     fn parse(pairs: pest::iterators::Pair<'_, Rule>, ctx: &mut ParseCtx) -> Self {
         match pairs.as_rule() {
             Rule::integer => Ast::Int(Integer::from_str(pairs.as_str()).unwrap()),
-            Rule::float => Ast::Float(Rational::from_str(pairs.as_str()).unwrap()),
+            Rule::float => {
+                let r :Vec<_>= pairs.as_str().split(".").collect();
+                let l = r[1].len();
+                let nom = format!("{}{}/1{}",r[0],r[1],"0".repeat(l));
+                Ast::Float(Rational::from_str(&nom).unwrap())
+            },
             Rule::bools => Ast::Bool("true" == pairs.as_str()),
             Rule::primitives => Ast::PrimitiveCall(Primitives::parse(pairs, ctx)),
 
