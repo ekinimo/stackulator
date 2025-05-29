@@ -118,20 +118,16 @@ use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 use std::sync::Arc;
 
-
 impl Parse for Ast {
-
-    
-
     fn parse(pairs: pest::iterators::Pair<'_, Rule>, ctx: &mut ParseCtx) -> Self {
         match pairs.as_rule() {
             Rule::integer => Ast::Int(Integer::from_str(pairs.as_str()).unwrap()),
             Rule::float => {
-                let r :Vec<_>= pairs.as_str().split(".").collect();
+                let r: Vec<_> = pairs.as_str().split(".").collect();
                 let l = r[1].len();
-                let nom = format!("{}{}/1{}",r[0],r[1],"0".repeat(l));
+                let nom = format!("{}{}/1{}", r[0], r[1], "0".repeat(l));
                 Ast::Float(Rational::from_str(&nom).unwrap())
-            },
+            }
             Rule::bools => Ast::Bool("true" == pairs.as_str()),
             Rule::primitives => Ast::PrimitiveCall(Primitives::parse(pairs, ctx)),
 
@@ -167,7 +163,10 @@ impl Parse for Ast {
                 Ast::TypeCall(type_name, None, elements)
             }
 
-            x => {dbg!(x); unreachable!() },
+            x => {
+                dbg!(x);
+                unreachable!()
+            }
         }
     }
 }
@@ -274,26 +273,35 @@ impl Eval<Flow> for Ast {
                         let mut temp = vec![];
 
                         for i in 0..(arity.0) {
-                            temp.push(values[values.len()-i-1].to_owned());
+                            temp.push(values[values.len() - i - 1].to_owned());
                         }
                         temp.reverse();
                         let arms = env.protocol_data.get(fun_name).unwrap();
                         for tmp in arms {
                             let (types, act) = tmp;
-                            if types.iter().zip(temp.clone().into_iter()).all(|(a, b)| match (a, b) {
-                                (Type::Bool, Values::Bool(_)) => true,
-                                (Type::Integer, Values::Int(_)) => true,
-                                (Type::Float, Values::Float(_)) => true,
-                                (Type::Stack, Values::Stack(_)) => true,
-                                (Type::List, Values::List(_)) => true,
-                                (Type::Set, Values::Set(_)) => true,
-                                (Type::Map, Values::Map(_)) => true,
-                                (Type::CustomType(name1),Values::Custom { name, .. }) if name1 == &name => true,
-                                (Type::GenericTyp(_), _) => true,
-                                (a,b) => {dbg!((a,b));false},
-                            }){
-                                let (_ , act) = act;
-                                return act.eval(values,env,vars)
+                            if types.iter().zip(temp.clone().into_iter()).all(|(a, b)| {
+                                match (a, b) {
+                                    (Type::Bool, Values::Bool(_)) => true,
+                                    (Type::Integer, Values::Int(_)) => true,
+                                    (Type::Float, Values::Float(_)) => true,
+                                    (Type::Stack, Values::Stack(_)) => true,
+                                    (Type::List, Values::List(_)) => true,
+                                    (Type::Set, Values::Set(_)) => true,
+                                    (Type::Map, Values::Map(_)) => true,
+                                    (Type::CustomType(name1), Values::Custom { name, .. })
+                                        if name1 == &name =>
+                                    {
+                                        true
+                                    }
+                                    (Type::GenericTyp(_), _) => true,
+                                    (a, b) => {
+                                        dbg!((a, b));
+                                        false
+                                    }
+                                }
+                            }) {
+                                let (_, act) = act;
+                                return act.eval(values, env, vars);
                             }
                         }
                         dbg!("UNDERFLOOOOOOOW");

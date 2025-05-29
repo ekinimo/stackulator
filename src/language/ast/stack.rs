@@ -1,10 +1,10 @@
 use super::Ast;
 use crate::language::env::Env;
-use crate::language::eval::{ChainMap, Eval, EvalError, Values,Flow};
+use crate::language::eval::{ChainMap, Eval, EvalError, Flow, Values};
 use crate::language::parse::{Parse, ParseCtx, Rule};
 use std::sync::Arc;
 
-#[derive(Debug, Clone,PartialEq,PartialOrd,Ord,Eq)]
+#[derive(Debug, Clone, PartialEq, PartialOrd, Ord, Eq)]
 pub struct Stack {
     pub elems: Arc<[Ast]>,
 }
@@ -17,40 +17,39 @@ impl Default for Stack {
 }
 
 impl Eval<Flow> for Stack {
-
-
     fn eval(
         &self,
         values: &mut Vec<Values>,
         env: &Env,
         vars: &mut ChainMap,
     ) -> Result<Flow, EvalError> {
-
         for elem in self.elems.iter() {
             let ret = elem.eval(values, env, vars);
-            match ret{
+            match ret {
                 Ok(Flow::Ok | Flow::Cont) => (),
-                ret @ Ok(Flow::Break|Flow::Ret ) => {return ret} 
+                ret @ Ok(Flow::Break | Flow::Ret) => return ret,
                 err @ Err(_) => return err,
             }
         }
         Ok(Flow::Ok)
     }
 
-    fn get_free_vars(&self,vars:&mut std::collections::HashSet<usize>) {
+    fn get_free_vars(&self, vars: &mut std::collections::HashSet<usize>) {
         self.elems.iter().for_each(|x| x.get_free_vars(vars));
     }
 
-    fn get_vars(&self,vars:&mut std::collections::HashSet<usize>) {
+    fn get_vars(&self, vars: &mut std::collections::HashSet<usize>) {
         self.elems.iter().for_each(|x| x.get_vars(vars));
     }
 
-    fn replace_vars(self,free_vars:& std::collections::HashSet<usize>,vars:&ChainMap)->Self {
+    fn replace_vars(self, free_vars: &std::collections::HashSet<usize>, vars: &ChainMap) -> Self {
         let Stack { mut elems } = self;
-        elems = elems.iter().map(|x| x.clone().replace_vars(free_vars, vars)).collect();
+        elems = elems
+            .iter()
+            .map(|x| x.clone().replace_vars(free_vars, vars))
+            .collect();
         Stack { elems }
     }
-    
 }
 
 impl Parse for Stack {

@@ -1,7 +1,7 @@
 use super::stack::Stack;
 use crate::language::env::Env;
-use crate::language::eval::{ChainMap, Eval, EvalError, Values,Flow};
-#[derive(Debug, Clone, Default,PartialEq,PartialOrd,Ord,Eq)]
+use crate::language::eval::{ChainMap, Eval, EvalError, Flow, Values};
+#[derive(Debug, Clone, Default, PartialEq, PartialOrd, Ord, Eq)]
 pub struct While {
     cond: Stack,
     body: Stack,
@@ -17,7 +17,6 @@ impl Eval<Flow> for While {
         loop {
             let res = self.cond.eval(values, env, vars);
             match res {
-                
                 Ok(_) => match values.pop() {
                     Some(Values::Bool(true)) => {}
                     Some(Values::Bool(false)) => break,
@@ -32,8 +31,10 @@ impl Eval<Flow> for While {
             }
             let res = self.body.eval(values, env, vars);
             match res {
-                Ok(Flow::Break) => { break;}
-                Ok(Flow::Ret)   => {return Ok(Flow::Ret)}
+                Ok(Flow::Break) => {
+                    break;
+                }
+                Ok(Flow::Ret) => return Ok(Flow::Ret),
                 Ok(_) => (),
                 Err(err) => return Err(EvalError::WhileBodyFail(Box::new(err))),
             }
@@ -41,18 +42,18 @@ impl Eval<Flow> for While {
         Ok(Flow::Ok)
     }
 
-    fn replace_vars(self,free_vars:& std::collections::HashSet<usize>,vars:&ChainMap)->Self {
+    fn replace_vars(self, free_vars: &std::collections::HashSet<usize>, vars: &ChainMap) -> Self {
         let While { mut cond, mut body } = self;
         cond = cond.replace_vars(free_vars, vars);
         body = body.replace_vars(free_vars, vars);
-        While {  cond,  body }
+        While { cond, body }
     }
-    fn get_free_vars(&self,vars:&mut std::collections::HashSet<usize>) {
+    fn get_free_vars(&self, vars: &mut std::collections::HashSet<usize>) {
         self.cond.get_free_vars(vars);
         self.body.get_free_vars(vars)
     }
 
-    fn get_vars(&self,vars:&mut std::collections::HashSet<usize>) {
+    fn get_vars(&self, vars: &mut std::collections::HashSet<usize>) {
         self.cond.get_vars(vars);
         self.body.get_vars(vars)
     }

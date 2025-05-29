@@ -12,12 +12,22 @@ pub struct ParseCtx {
     type_idx: HashMap<String, usize>,
     tag_idx: HashMap<String, usize>,
     field_idx: HashMap<String, usize>,
-    
 }
 
 impl Default for ParseCtx {
     fn default() -> Self {
-       let mut ret =  Self { var_names: Default::default(), fun_names: Default::default(), type_names: Default::default(), tag_names: Default::default(), field_names: Default::default(), var_idx: Default::default(), fun_idx: Default::default(), type_idx: Default::default(), tag_idx: Default::default(), field_idx: Default::default() };
+        let mut ret = Self {
+            var_names: Default::default(),
+            fun_names: Default::default(),
+            type_names: Default::default(),
+            tag_names: Default::default(),
+            field_names: Default::default(),
+            var_idx: Default::default(),
+            fun_idx: Default::default(),
+            type_idx: Default::default(),
+            tag_idx: Default::default(),
+            field_idx: Default::default(),
+        };
         ret.insert_fun("add");
         ret.insert_fun("sub");
         ret.insert_fun("mult");
@@ -34,7 +44,6 @@ impl Default for ParseCtx {
         ret.insert_fun("or");
         ret.insert_fun("xor");
         ret.insert_fun("not");
-
 
         ret.insert_fun("stack_size");
 
@@ -59,10 +68,9 @@ impl Default for ParseCtx {
 
         ret.insert_fun("map");
         ret.insert_fun("apply");
-        ret 
+        ret
     }
 }
-
 
 impl ParseCtx {
     pub fn insert_var(&mut self, var: impl Into<String> + Clone) -> usize {
@@ -124,7 +132,6 @@ impl ParseCtx {
         }
     }
 
-
     pub fn lookup_call_name(&self, i: usize) -> String {
         self.fun_names[i].to_string()
     }
@@ -143,7 +150,6 @@ impl ParseCtx {
     pub fn lookup_field_name(&self, i: usize) -> String {
         self.field_names[i].to_string()
     }
-
 }
 
 use pest_derive::Parser;

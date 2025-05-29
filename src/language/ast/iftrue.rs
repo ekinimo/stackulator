@@ -1,20 +1,17 @@
 use crate::language::ast::stack::Stack;
 use crate::language::env::Env;
-use crate::language::eval::{ChainMap, Eval, EvalError, Values,Flow};
+use crate::language::eval::{ChainMap, Eval, EvalError, Flow, Values};
 
-#[derive(Debug, Clone, Default,PartialEq,PartialOrd,Ord,Eq)]
+#[derive(Debug, Clone, Default, PartialEq, PartialOrd, Ord, Eq)]
 pub struct IfTrue {
     elems: Stack,
 }
 
-impl From<Stack> for IfTrue{
+impl From<Stack> for IfTrue {
     fn from(value: Stack) -> Self {
-        Self{
-            elems:value
-        }
+        Self { elems: value }
     }
 }
-
 
 impl Eval<Flow> for IfTrue {
     fn eval(
@@ -34,21 +31,19 @@ impl Eval<Flow> for IfTrue {
         }
     }
 
-    fn get_free_vars(&self,vars:&mut std::collections::HashSet<usize>) {
+    fn get_free_vars(&self, vars: &mut std::collections::HashSet<usize>) {
         self.elems.get_free_vars(vars)
     }
 
-    fn get_vars(&self,vars:&mut std::collections::HashSet<usize>) {
+    fn get_vars(&self, vars: &mut std::collections::HashSet<usize>) {
         self.elems.get_vars(vars)
     }
 
-    fn replace_vars( self,free_vars:& std::collections::HashSet<usize>,vars:&ChainMap)->Self {
-        let IfTrue{mut elems} = self;
+    fn replace_vars(self, free_vars: &std::collections::HashSet<usize>, vars: &ChainMap) -> Self {
+        let IfTrue { mut elems } = self;
         elems = elems.replace_vars(free_vars, vars);
-        IfTrue{elems}
+        IfTrue { elems }
     }
-
-    
 }
 
 use crate::language::ast::Ast;

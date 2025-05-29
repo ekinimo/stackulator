@@ -1,8 +1,8 @@
 use super::stack::Stack;
 use crate::language::env::Env;
-use crate::language::eval::{ChainMap, Eval, EvalError, Values,Flow};
+use crate::language::eval::{ChainMap, Eval, EvalError, Flow, Values};
 
-#[derive(Debug, Clone, Default,PartialEq,PartialOrd,Ord,Eq)]
+#[derive(Debug, Clone, Default, PartialEq, PartialOrd, Ord, Eq)]
 pub struct Take {
     vars: Vec<usize>,
     body: Stack,
@@ -25,8 +25,7 @@ impl Eval<Flow> for Take {
             vars.insert(*i, val);
         }
         let ret = match self.body.eval(values, env, vars) {
-
-            res@Ok(_) => res,
+            res @ Ok(_) => res,
             Err(err) => {
                 vars.pop();
                 return Err(EvalError::TakeBodyFail(Box::new(err)));
@@ -36,23 +35,25 @@ impl Eval<Flow> for Take {
         ret
     }
 
-    fn get_free_vars(&self,vars:&mut std::collections::HashSet<usize>) {
+    fn get_free_vars(&self, vars: &mut std::collections::HashSet<usize>) {
         self.body.get_vars(vars);
-        let my_vars : HashSet<usize>= self.vars.iter().cloned().collect();
-        *vars =vars.difference(&my_vars).cloned().collect();
+        let my_vars: HashSet<usize> = self.vars.iter().cloned().collect();
+        *vars = vars.difference(&my_vars).cloned().collect();
     }
 
-    fn get_vars(&self,vars:&mut std::collections::HashSet<usize>) {
+    fn get_vars(&self, vars: &mut std::collections::HashSet<usize>) {
         self.body.get_vars(vars)
     }
 
-    fn replace_vars(self,free_vars:& std::collections::HashSet<usize>,map_vars:&ChainMap)->Self {
+    fn replace_vars(
+        self,
+        free_vars: &std::collections::HashSet<usize>,
+        map_vars: &ChainMap,
+    ) -> Self {
         let Take { vars, mut body } = self;
         body = body.replace_vars(free_vars, map_vars);
-        Take { vars,  body }
+        Take { vars, body }
     }
-
-    
 }
 
 use crate::language::ast::Ast;

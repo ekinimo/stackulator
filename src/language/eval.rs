@@ -1,7 +1,7 @@
-use super::ast::Type;
 use super::ast::primitives::Primitives;
+use super::ast::Type;
 use super::env::Env;
-use std::collections::{HashMap, VecDeque, BTreeSet, BTreeMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque};
 
 #[derive(Clone, Debug)]
 pub enum EvalError {
@@ -29,38 +29,39 @@ pub enum EvalError {
     MatchCondExpectsBoolButGot(Values),
 
     PrimitiveUnderflow(Primitives),
-    PrimitiveTypeErr(Primitives,String),
+    PrimitiveTypeErr(Primitives, String),
     PrimitiveEvalErr,
     MapExprMustHaveListOfLen2,
 
-   TypeDoesntExist(usize),
-   TypeConstructorLenMismatch(usize,usize,usize),
+    TypeDoesntExist(usize),
+    TypeConstructorLenMismatch(usize, usize, usize),
 
-   IndexOutOfBounds,
+    IndexOutOfBounds,
     Underflow,
-
 }
 
 use malachite::{Integer, Rational};
 
-
-#[derive(Debug, Clone,PartialEq,PartialOrd,Ord,Eq)]
+#[derive(Debug, Clone, PartialEq, PartialOrd, Ord, Eq)]
 pub enum Values {
     Bool(bool),
     Int(Integer),
     Float(Rational),
-    
-    Stack(super::ast::stack::Stack),
-    List(VecDeque<Values> ),
-    Set(BTreeSet<Values> ),
-    Map(BTreeMap<Values,Values> ),
 
-    Custom{name:usize,tag:Option<usize>, values: Option<VecDeque<Values>>}
+    Stack(super::ast::stack::Stack),
+    List(VecDeque<Values>),
+    Set(BTreeSet<Values>),
+    Map(BTreeMap<Values, Values>),
+
+    Custom {
+        name: usize,
+        tag: Option<usize>,
+        values: Option<VecDeque<Values>>,
+    },
 }
 
-impl Values{
-
-    pub fn get_type(&self)->&str{
+impl Values {
+    pub fn get_type(&self) -> &str {
         match self {
             Values::Float(_) => "float",
             Values::Int(_) => "int",
@@ -69,12 +70,16 @@ impl Values{
             Values::List(_) => "list",
             Values::Set(_) => "set",
             Values::Map(_) => "map",
-            Values::Custom { name: _, tag: _, values: _ } => "",
+            Values::Custom {
+                name: _,
+                tag: _,
+                values: _,
+            } => "",
         }
     }
 
-    pub fn get_real_type(&self)->Type{
-        match self{
+    pub fn get_real_type(&self) -> Type {
+        match self {
             Values::Bool(_) => Type::Bool,
             Values::Int(_) => Type::Integer,
             Values::Float(_) => Type::Float,
@@ -136,57 +141,69 @@ impl Representation<(), ParseCtx> for Values {
             Values::Bool(i) => format!("{i}"),
             Values::Stack(s) => s.get_repr(context),
             Values::List(l) => {
-                let mut ret =  String::new();
+                let mut ret = String::new();
                 ret.push_str("List(");
                 let len = l.len();
-                l.iter().enumerate().for_each(|(idx,x)| {ret.push_str(&x.get_repr(context)); if idx != len-1 {ret.push_str(", ");}});
-                ret.push(')');
-                ret
-            },
-            Values::Set(l) => {
-                let mut ret =  String::new();
-                let len = l.len();
-                ret.push_str("Set(");
-                l.iter().enumerate().for_each(|(idx,x)| {ret.push_str(&x.get_repr(context));
-                                                    if idx != len-1{ret.push_str(", ");}});
-                ret.push(')');
-                ret
-            },
-            Values::Map(map) => {
-                let mut ret =  String::new();
-                ret.push_str("Map(");
-                let len = map.len();
-                map.iter().enumerate().for_each(|(idx,(x,y))| {
-                    ret.push_str("[ ");ret.push_str(&x.get_repr(context)); ret.push_str(", "); ret.push_str(&y.get_repr(context));
-                    ret.push_str("] ");
-                    if idx != len-1{
-                    ret.push_str(", ");
+                l.iter().enumerate().for_each(|(idx, x)| {
+                    ret.push_str(&x.get_repr(context));
+                    if idx != len - 1 {
+                        ret.push_str(", ");
                     }
                 });
                 ret.push(')');
                 ret
-                    
-            },
+            }
+            Values::Set(l) => {
+                let mut ret = String::new();
+                let len = l.len();
+                ret.push_str("Set(");
+                l.iter().enumerate().for_each(|(idx, x)| {
+                    ret.push_str(&x.get_repr(context));
+                    if idx != len - 1 {
+                        ret.push_str(", ");
+                    }
+                });
+                ret.push(')');
+                ret
+            }
+            Values::Map(map) => {
+                let mut ret = String::new();
+                ret.push_str("Map(");
+                let len = map.len();
+                map.iter().enumerate().for_each(|(idx, (x, y))| {
+                    ret.push_str("[ ");
+                    ret.push_str(&x.get_repr(context));
+                    ret.push_str(", ");
+                    ret.push_str(&y.get_repr(context));
+                    ret.push_str("] ");
+                    if idx != len - 1 {
+                        ret.push_str(", ");
+                    }
+                });
+                ret.push(')');
+                ret
+            }
             Values::Custom { name, tag, values } => {
-                let mut ret =  String::new();
+                let mut ret = String::new();
                 ret.push_str(context.lookup_type_name(*name).as_str());
                 tag.map(|tag| {
                     ret.push_str("::");
-                    ret.push_str( context.lookup_tag_name(tag).as_str())
+                    ret.push_str(context.lookup_tag_name(tag).as_str())
                 });
                 ret.push('(');
                 values.as_ref().map(|x| {
                     let len = x.len();
-                    x.iter().enumerate().for_each(|(idx,value)| {
-                    ret.push_str(&value.get_repr(context));
-                        if idx != len-1 {ret.push(',');}
-                })});
+                    x.iter().enumerate().for_each(|(idx, value)| {
+                        ret.push_str(&value.get_repr(context));
+                        if idx != len - 1 {
+                            ret.push(',');
+                        }
+                    })
+                });
 
                 ret.push(')');
                 ret
-                    
             }
-            
         }
     }
 }
@@ -238,8 +255,12 @@ impl Representation<(), ParseCtx> for EvalError {
                 format!("MatchCondExpectsBoolButGot {}", x.get_repr(context))
             }
             EvalError::MatchCondUnderFlow => "MatchCondUnderFlow".to_string(),
-            EvalError::PrimitiveUnderflow(p) => format!("PrimitiveUnderflow {}",p.get_repr(context)),
-            EvalError::PrimitiveTypeErr(p,s) => format!("PrimitiveTypeErr {} {}",p.get_repr(context),s),
+            EvalError::PrimitiveUnderflow(p) => {
+                format!("PrimitiveUnderflow {}", p.get_repr(context))
+            }
+            EvalError::PrimitiveTypeErr(p, s) => {
+                format!("PrimitiveTypeErr {} {}", p.get_repr(context), s)
+            }
             EvalError::PrimitiveEvalErr => "PrimitiveEvalErr ".to_string(),
             EvalError::IfCondUnderFlow => "IfCondUnderFlow".to_string(),
             EvalError::NoMatch => "NoMatch".to_string(),
@@ -249,17 +270,20 @@ impl Representation<(), ParseCtx> for EvalError {
             EvalError::MapExprMustHaveListOfLen2 => "MapExprMustHaveListOfLen2".to_string(),
             EvalError::TypeDoesntExist(x) => {
                 format!("TypeDoesntExist {}", context.lookup_type_name(*x))
-            },
+            }
             EvalError::TypeConstructorLenMismatch(name, expects, got) => {
-                format!("TypeConstructorLenMismatch {} expects {expects} many arguments but got {got}.", context.lookup_type_name(*name))
-            },
+                format!(
+                    "TypeConstructorLenMismatch {} expects {expects} many arguments but got {got}.",
+                    context.lookup_type_name(*name)
+                )
+            }
             EvalError::IndexOutOfBounds => todo!(),
             EvalError::Underflow => "Underflow".to_string(),
         }
     }
 }
 
-pub enum Flow{
+pub enum Flow {
     Break,
     Ok,
     Ret,
@@ -274,7 +298,7 @@ pub trait Eval<T> {
         vars: &mut ChainMap,
     ) -> Result<T, EvalError>;
 
-    fn get_free_vars(&self,vars:&mut HashSet<usize>);
-    fn get_vars(&self,vars:&mut std::collections::HashSet<usize>);
-    fn replace_vars(self,free_vars:& std::collections::HashSet<usize>,vars:&ChainMap)->Self;
+    fn get_free_vars(&self, vars: &mut HashSet<usize>);
+    fn get_vars(&self, vars: &mut std::collections::HashSet<usize>);
+    fn replace_vars(self, free_vars: &std::collections::HashSet<usize>, vars: &ChainMap) -> Self;
 }
