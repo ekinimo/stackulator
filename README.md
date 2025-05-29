@@ -167,3 +167,4 @@ This here is more of a roadmap
 - Give language ability to acces the GUI itself.
 - Stack size checking (We should have an option of the language where `while` , `if` and `match` respects the stack size ) 
 - Statical type system (We should have an option of the language where the program is staticallly typed. We probably will require type signatures at function boundries ) 
+
