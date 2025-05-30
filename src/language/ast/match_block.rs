@@ -1102,22 +1102,30 @@ impl Representation<(), ParseCtx> for Pattern {
             Pattern::Float(i) => format!("{i}"),
             Pattern::Bool(i) => format!("{i}"),
             Pattern::Variable(i) => context.lookup_var_name(*i),
-            Pattern::TypeBool(None) => todo!(),
-            Pattern::TypeBool(Some(_i)) => todo!(),
-            Pattern::TypeInt(None) => todo!(),
-            Pattern::TypeInt(Some(_i)) => todo!(),
-            Pattern::TypeFloat(None) => todo!(),
-            Pattern::TypeFloat(Some(_i)) => todo!(),
-            Pattern::TypeStack(None) => todo!(),
-            Pattern::TypeStack(Some(_i)) => todo!(),
-            Pattern::TypeList(_) => todo!(),
-            Pattern::TypeSet(_) => todo!(),
-            Pattern::TypeMap(_) => todo!(),
-            Pattern::NamedStruct(_, _) => todo!(),
-            Pattern::NamedVariant(_, _, _) => todo!(),
+            Pattern::TypeBool(None) => "todo!()".to_string(),
+            Pattern::TypeBool(Some(_i)) => "todo!()".to_string(),
+            Pattern::TypeInt(None) => "todo!()".to_string(),
+            Pattern::TypeInt(Some(_i)) => "todo!()".to_string(),
+            Pattern::TypeFloat(None) => "todo!()".to_string(),
+            Pattern::TypeFloat(Some(_i)) => "todo!()".to_string(),
+            Pattern::TypeStack(None) => "todo!()".to_string(),
+            Pattern::TypeStack(Some(_i)) => "todo!()".to_string(),
+            Pattern::TypeList(_) => "todo!()".to_string(),
+            Pattern::TypeSet(_) => "todo!()".to_string(),
+            Pattern::TypeMap(_) => "todo!()".to_string(),
+            Pattern::NamedStruct(t, p) => {format!("{},({})",context.lookup_type_name(*t),p.get_repr(context))},
+            Pattern::NamedVariant(_, _, _) => "todo!()".to_string(),
         }
     }
 }
+
+impl Representation<(),ParseCtx> for TypePattern{
+    fn get_repr(&self, context: &ParseCtx) -> String {
+        "todo!()".to_string()
+    }
+}
+
+
 impl Representation<(), ParseCtx> for MatchElem {
     fn get_repr(&self, context: &ParseCtx) -> String {
         let mut result = String::new();
