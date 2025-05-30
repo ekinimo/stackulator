@@ -1,0 +1,13 @@
+[application]
+name = "stackulator"
+
+[web.app]
+title = "Stackulator"
+base_path = "stackulator"
+
+[web.watcher]
+
+[web.resource]
+
+[web.resource.dev]
+
