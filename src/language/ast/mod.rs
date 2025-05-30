@@ -252,9 +252,9 @@ impl Eval<Flow> for Ast {
 
                     match &name {
                         Some(func) => {
-                            return func
-                                .eval(values, env, vars)
-                                .map_err(|err| EvalError::FuncCallFail(Box::new((*fun_name, err))))
+                            return func.eval(values, env, vars).map_err(|err| {
+                                EvalError::FuncCallFail(Box::new((*fun_name, err)))
+                            });
                         }
 
                         None => (),

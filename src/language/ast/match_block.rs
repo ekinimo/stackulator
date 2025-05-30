@@ -1113,18 +1113,19 @@ impl Representation<(), ParseCtx> for Pattern {
             Pattern::TypeList(_) => "todo!()".to_string(),
             Pattern::TypeSet(_) => "todo!()".to_string(),
             Pattern::TypeMap(_) => "todo!()".to_string(),
-            Pattern::NamedStruct(t, p) => {format!("{},({})",context.lookup_type_name(*t),p.get_repr(context))},
+            Pattern::NamedStruct(t, p) => {
+                format!("{},({})", context.lookup_type_name(*t), p.get_repr(context))
+            }
             Pattern::NamedVariant(_, _, _) => "todo!()".to_string(),
         }
     }
 }
 
-impl Representation<(),ParseCtx> for TypePattern{
+impl Representation<(), ParseCtx> for TypePattern {
     fn get_repr(&self, context: &ParseCtx) -> String {
         "todo!()".to_string()
     }
 }
-
 
 impl Representation<(), ParseCtx> for MatchElem {
     fn get_repr(&self, context: &ParseCtx) -> String {

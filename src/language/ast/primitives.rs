@@ -1,8 +1,8 @@
 use crate::language::env::Env;
 use crate::language::eval::{ChainMap, Eval, EvalError, Flow, Values};
 
-use malachite::num::arithmetic::traits::*;
 use malachite::Rational;
+use malachite::num::arithmetic::traits::*;
 #[derive(Debug, Clone, PartialEq, PartialOrd, Ord, Eq)]
 pub enum Primitives {
     Add,

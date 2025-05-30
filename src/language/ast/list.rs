@@ -6,7 +6,7 @@ use crate::language::{
     parse::{Parse, ParseCtx, Rule},
 };
 
-use super::{stack::Stack, Ast};
+use super::{Ast, stack::Stack};
 
 #[derive(Clone, Debug, PartialEq, PartialOrd, Ord, Eq)]
 pub struct List {

@@ -1,5 +1,5 @@
-use super::ast::primitives::Primitives;
 use super::ast::Type;
+use super::ast::primitives::Primitives;
 use super::env::Env;
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque};
 
