@@ -1,18 +1,18 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>dioxus | ⛺</title>
+    <title>Stackulator</title>
     <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta charset="UTF-8" />
-  <link rel="preload" as="script" href="/./assets/stackulator-e304601c6d03b4f2.js" crossorigin><link rel="preload" as="fetch" type="application/wasm" href="/./assets/stackulator_bg-0f11e0f3071901aa.wasm" crossorigin></head>
+  <link rel="preload" as="script" href="/./assets/stackulator-e304601c6d03b4f2.js" crossorigin><link rel="preload" as="fetch" type="application/wasm" href="/./assets/stackulator_bg-8a704b5b5f496603.wasm" crossorigin></head>
   <body>
     <div id="main"></div>
   <script>
             // We can't use a module script here because we need to start the script immediately when streaming
             import("/./assets/stackulator-e304601c6d03b4f2.js").then(
                 ({ default: init }) => {
-                init("/./assets/stackulator_bg-0f11e0f3071901aa.wasm").then((wasm) => {
+                init("/./assets/stackulator_bg-8a704b5b5f496603.wasm").then((wasm) => {
                     if (wasm.__wbindgen_start == undefined) {
                     wasm.main();
                     }
