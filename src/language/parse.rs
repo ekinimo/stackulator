@@ -30,7 +30,7 @@ impl Default for ParseCtx {
         };
         ret.insert_fun("add");
         ret.insert_fun("sub");
-        ret.insert_fun("mult");
+        ret.insert_fun("mul");
         ret.insert_fun("div");
 
         ret.insert_fun("eq");
@@ -134,6 +134,10 @@ impl ParseCtx {
 
     pub fn lookup_call_name(&self, i: usize) -> String {
         self.fun_names[i].to_string()
+    }
+
+    pub fn lookup_call_name_maybe(&self, i: usize) -> Option<String> {
+        self.fun_names.get(i).map(|x| x.to_string())
     }
 
     pub fn lookup_tag_name(&self, i: usize) -> String {

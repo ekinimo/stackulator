@@ -10,12 +10,13 @@ fn main() {
 }
 
 #[derive(Clone, Copy, PartialEq)]
-enum Tab {
-    Stack,
+enum SidebarTab {
+    Protocols,
     Definitions,
     Structs,
     Enums,
     Examples,
+    Tutorial,
 }
 
 #[component]
@@ -26,7 +27,9 @@ fn App() -> Element {
     let mut history = use_signal(Vec::<Arc<String>>::new);
     let mut history_idx = use_signal(|| None::<usize>);
     let mut has_err = use_signal(|| false);
-    let mut tab = use_signal(|| Tab::Stack);
+    let mut sidebar_open = use_signal(|| false);
+    let mut sidebar_pinned = use_signal(|| false);
+    let mut active_tab = use_signal(|| SidebarTab::Examples);
 
     let mut eval = move |_| {
         if *has_err.read() {
@@ -104,115 +107,309 @@ fn App() -> Element {
         }
     };
 
+    let css = r#"
+                .example-item:hover {
+                    border-left-color: #58a6ff !important;
+                    background: #1c2128 !important;
+                }
+                "#;
     rsx! {
+        head {
+            style {
+                "{css}"
+            }
+        }
         div {
             style: "
-                min-height: 100vh;
-                background: linear-gradient(135deg, #667eea, #764ba2);
-                color: white;
-                font-family: system-ui, sans-serif;
-                padding: 1rem;
+                height: 100vh;
+                background: #0d1117;
+                color: #f0f6fc;
+                font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', monospace;
+                display: flex;
+                overflow: hidden;
             ",
 
+            // Sidebar
             div {
-                style: "max-width: 1200px; margin: 0 auto; display: grid; gap: 1rem; grid-template-columns: 1fr;",
+                style: format!("
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    height: 100vh;
+                    width: 320px;
+                    background: #161b22;
+                    border-right: 1px solid #21262d;
+                    transform: translateX({});
+                    transition: transform 0.2s ease;
+                    z-index: 100;
+                    display: flex;
+                    flex-direction: column;
+                ", if *sidebar_open.read() || *sidebar_pinned.read() { "0" } else { "-100%" }),
+                onmouseenter: move |_| if !*sidebar_pinned.read() { sidebar_open.set(true) },
+                onmouseleave: move |_| if !*sidebar_pinned.read() { sidebar_open.set(false) },
 
-                // Input
+                // Sidebar header
                 div {
-                    style: "display: flex; flex-direction: column; gap: 1rem;",
+                    style: "
+                        padding: 1rem;
+                        border-bottom: 1px solid #21262d;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                    ",
+                    h2 {
+                        style: "font-size: 1rem; font-weight: 600; color: #f0f6fc; margin: 0;",
+                        "Stackulator"
+                    }
+                    button {
+                        style: format!("
+                            background: none;
+                            border: none;
+                            color: {};
+                            cursor: pointer;
+                            padding: 0.25rem;
+                            border-radius: 4px;
+                        ", if *sidebar_pinned.read() { "#58a6ff" } else { "#8b949e" }),
+                        onclick: move |_| {
+                            let current = *sidebar_pinned.read();
+                            sidebar_pinned.set(!current);
+                        },
+                        if *sidebar_pinned.read() { "📌" } else { "📍" }
+                    }
+                }
 
+                // Sidebar tabs
+                div {
+                    style: "
+                        display: flex;
+                        border-bottom: 1px solid #21262d;
+                        overflow-x: auto;
+                    ",
+                    for (tab, name) in [
+                        (SidebarTab::Tutorial, "Tutorial"),
+                        (SidebarTab::Examples, "Examples"),
+                        (SidebarTab::Protocols, "Protocols"),
+                        (SidebarTab::Definitions, "Defs"),
+                        (SidebarTab::Structs, "Structs"),
+                        (SidebarTab::Enums, "Enums"),
+                    ] {
+                        button {
+                            key: "{name}",
+                            style: format!("
+                                flex: 1;
+                                padding: 0.5rem;
+                                font-size: 0.75rem;
+                                font-weight: 500;
+                                border: none;
+                                cursor: pointer;
+                                background: {};
+                                color: {};
+                                border-bottom: 2px solid {};
+                            ",
+                                if *active_tab.read() == tab { "#21262d" } else { "transparent" },
+                                if *active_tab.read() == tab { "#f0f6fc" } else { "#8b949e" },
+                                if *active_tab.read() == tab { "#58a6ff" } else { "transparent" }
+                            ),
+                            onclick: move |_| active_tab.set(tab),
+                            "{name}"
+                        }
+                    }
+                }
+
+                // Sidebar content
+                div {
+                    style: "flex: 1; overflow-y: auto; padding: 1rem;",
+                    match *active_tab.read() {
+                        SidebarTab::Tutorial => rsx! { Tutorial {} },
+                        SidebarTab::Examples => rsx! { Examples { content } },
+                        SidebarTab::Protocols => rsx! { Protocols { vm } },
+                        SidebarTab::Definitions => rsx! { Definitions { vm } },
+                        SidebarTab::Structs => rsx! { Structs { vm } },
+                        SidebarTab::Enums => rsx! { Enums { vm } },
+                    }
+                }
+            }
+
+            // Sidebar trigger area
+            div {
+                style: format!("
+                    position: fixed;
+                    top: 50%;
+                    left: {};
+                    width: 20px;
+                    height: 60px;
+                    background: #21262d;
+                    border-radius: 0 8px 8px 0;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                    z-index: 101;
+                    transform: translateY(-50%);
+                    opacity: {};
+                ",
+                    if *sidebar_open.read() || *sidebar_pinned.read() { "320px" } else { "0" },
+                    if *sidebar_open.read() || *sidebar_pinned.read() { "0.3" } else { "0.6" }
+                ),
+                onmouseenter: move |_| if !*sidebar_pinned.read() { sidebar_open.set(true) },
+                "⋮"
+            }
+
+            // Main content
+            div {
+                style: format!("
+                    flex: 1;
+                    display: grid;
+                    grid-template-columns: 1fr 400px;
+                    gap: 1px;
+                    background: #21262d;
+                    margin-left: {};
+                ", if *sidebar_pinned.read() { "320px" } else { "0" }),
+
+                // Left panel - Code editor
+                div {
+                    style: "
+                        background: #0d1117;
+                        display: flex;
+                        flex-direction: column;
+                    ",
+
+                    // Toolbar
                     div {
-                        style: "display: flex; gap: 0.5rem; flex-wrap: wrap;",
+                        style: "
+                            padding: 0.75rem;
+                            background: #161b22;
+                            border-bottom: 1px solid #21262d;
+                            display: flex;
+                            gap: 0.5rem;
+                            align-items: center;
+                        ",
+
                         button {
-                            style: "padding: 0.5rem 1rem; background: #059669; border-radius: 6px; border: none; color: white; font-size: 0.875rem; font-weight: 500; cursor: pointer;",
+                            style: "
+                                padding: 0.5rem 1rem;
+                                background: #238636;
+                                border: 1px solid #2ea043;
+                                border-radius: 6px;
+                                color: #fff;
+                                font-size: 0.875rem;
+                                font-weight: 500;
+                                cursor: pointer;
+                                display: flex;
+                                align-items: center;
+                                gap: 0.25rem;
+                            ",
                             onclick: move |_| eval(()),
-                            "⚡ Run"
+                            "▶ Run"
                         }
-                        button {
-                            style: "padding: 0.5rem 1rem; background: #4b5563; border-radius: 6px; border: none; color: white; font-size: 0.875rem; cursor: pointer;",
-                            onclick: move |_| prev(()),
-                            "↑"
+
+                        div {
+                            style: "display: flex; gap: 0.25rem;",
+                            button {
+                                style: "
+                                    padding: 0.5rem;
+                                    background: #21262d;
+                                    border: 1px solid #30363d;
+                                    border-radius: 6px;
+                                    color: #f0f6fc;
+                                    cursor: pointer;
+                                ",
+                                onclick: move |_| prev(()),
+                                "↑"
+                            }
+                            button {
+                                style: "
+                                    padding: 0.5rem;
+                                    background: #21262d;
+                                    border: 1px solid #30363d;
+                                    border-radius: 6px;
+                                    color: #f0f6fc;
+                                    cursor: pointer;
+                                ",
+                                onclick: move |_| next(()),
+                                "↓"
+                            }
                         }
-                        button {
-                            style: "padding: 0.5rem 1rem; background: #4b5563; border-radius: 6px; border: none; color: white; font-size: 0.875rem; cursor: pointer;",
-                            onclick: move |_| next(()),
-                            "↓"
+
+                        div {
+                            style: "flex: 1; text-align: right; font-size: 0.75rem; color: #8b949e;",
+                            "Ctrl+Enter to run • F4 to execute"
                         }
                     }
 
+                    // Code editor
                     textarea {
                         style: "
-                            width: 100%;
-                            height: 12rem;
-                            padding: 0.75rem;
-                            background: rgba(0, 0, 0, 0.3);
-                            border: 1px solid rgba(255, 255, 255, 0.2);
-                            border-radius: 6px;
-                            font-family: monospace;
-                            font-size: 0.875rem;
-                            resize: vertical;
+                            flex: 1;
+                            padding: 1rem;
+                            background: #0d1117;
+                            border: none;
+                            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', monospace;
+                            font-size: 14px;
+                            line-height: 1.5;
+                            color: #f0f6fc;
+                            resize: none;
                             outline: none;
-                            color: white;
                         ",
-                        placeholder: "Enter code... Ctrl+Enter to run",
+                        placeholder: "Enter your code here...",
                         value: "{content}",
                         oninput: move |e| content.set(e.value()),
                         onkeydown: keydown,
                     }
 
+                    // Error display
                     if *has_err.read() {
                         div {
-                            style: "padding: 0.75rem; background: rgba(185, 28, 28, 0.5); border: 1px solid rgba(239, 68, 68, 0.5); border-radius: 6px;",
+                            style: "
+                                padding: 1rem;
+                                background: #2d1b1b;
+                                border-top: 1px solid #f85149;
+                                border-left: 4px solid #f85149;
+                            ",
+                            div {
+                                style: "font-size: 0.75rem; color: #f85149; font-weight: 600; margin-bottom: 0.5rem;",
+                                "⚠ Error"
+                            }
                             pre {
-                                style: "font-size: 0.875rem; font-family: monospace; color: #fecaca; white-space: pre-wrap; margin: 0;",
+                                style: "
+                                    font-size: 0.75rem;
+                                    font-family: monospace;
+                                    color: #ffa198;
+                                    white-space: pre-wrap;
+                                    margin: 0;
+                                    line-height: 1.4;
+                                ",
                                 "{err.read()}"
                             }
                         }
                     }
                 }
 
-                // Tabs
+                // Right panel - Stack
                 div {
-                    style: "background: rgba(255, 255, 255, 0.1); border-radius: 8px; overflow: hidden; backdrop-filter: blur(10px);",
+                    style: "
+                        background: #0d1117;
+                        display: flex;
+                        flex-direction: column;
+                    ",
 
-                    nav {
-                        style: "display: flex; background: rgba(0, 0, 0, 0.2); border-bottom: 1px solid rgba(255, 255, 255, 0.1); overflow-x: auto;",
-                        for (t, icon, name) in [
-                            (Tab::Stack, "📚", "Stack"),
-                            (Tab::Definitions, "🔧", "Defs"),
-                            (Tab::Structs, "🏗", "Structs"),
-                            (Tab::Enums, "🔀", "Enums"),
-                            (Tab::Examples, "💡", "Examples"),
-                        ] {
-                            button {
-                                key: "{name}",
-                                style: format!("
-                                    flex: 1;
-                                    padding: 0.5rem;
-                                    font-size: 0.75rem;
-                                    font-weight: 500;
-                                    white-space: nowrap;
-                                    border: none;
-                                    cursor: pointer;
-                                    background: {};
-                                    color: {};
-                                ", if *tab.read() == t { "rgba(255, 255, 255, 0.2)" } else { "transparent" },
-                                   if *tab.read() == t { "#ffffff" } else { "rgba(255, 255, 255, 0.7)" }),
-                                onclick: move |_| tab.set(t),
-                                "{icon} {name}"
-                            }
-                        }
+                    // Stack header
+                    div {
+                        style: "
+                            padding: 0.75rem;
+                            background: #161b22;
+                            border-bottom: 1px solid #21262d;
+                            font-weight: 600;
+                            font-size: 0.875rem;
+                            color: #f0f6fc;
+                        ",
+                        "Stack"
                     }
 
+                    // Stack content
                     div {
-                        style: "padding: 0.75rem; max-height: 24rem; overflow-y: auto;",
-                        match *tab.read() {
-                            Tab::Stack => rsx! { Stack { vm } },
-                            Tab::Definitions => rsx! { Definitions { vm } },
-                            Tab::Structs => rsx! { Structs { vm } },
-                            Tab::Enums => rsx! { Enums { vm } },
-                            Tab::Examples => rsx! { Examples { content } },
-                        }
+                        style: "flex: 1; overflow-y: auto;",
+                        Stack { vm }
                     }
                 }
             }
@@ -227,28 +424,154 @@ fn Stack(vm: Signal<VM>) -> Element {
     if vm_ref.stack.is_empty() {
         return rsx! {
             div {
-                style: "text-center py-8 text-white/60",
-                div { style: "text-2xl mb-2", "📭" }
-                "Stack empty"
+                style: "
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    height: 200px;
+                    color: #6e7681;
+                ",
+                div { style: "font-size: 2rem; margin-bottom: 0.5rem;", "📭" }
+                div { "Stack is empty" }
             }
         };
     }
 
     rsx! {
         div {
-            style: "display: flex; flex-direction: column-reverse; gap: 0.5rem;",
-            for (i, value) in vm_ref.stack.iter().enumerate() {
+            style: "padding: 1rem;",
+            div {
+                style: "display: flex; flex-direction: column-reverse; gap: 0.5rem;",
+                for (i, value) in vm_ref.stack.iter().enumerate() {
+                    div {
+                        key: "{i}",
+                        style: "
+                            padding: 0.75rem;
+                            background: #161b22;
+                            border: 1px solid #21262d;
+                            border-radius: 6px;
+                            border-left: 3px solid #58a6ff;
+                        ",
+                        div {
+                            style: "
+                                font-size: 0.75rem;
+                                color: #8b949e;
+                                margin-bottom: 0.5rem;
+                                font-weight: 500;
+                            ",
+                            "#{i}"
+                        }
+                        div {
+                            style: "
+                                font-family: monospace;
+                                font-size: 0.875rem;
+                                color: #f0f6fc;
+                                word-break: break-all;
+                                line-height: 1.4;
+                            ",
+                            "{value.get_repr(&vm_ref.parse_ctx)}"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[component]
+fn Tutorial() -> Element {
+    rsx! {
+        div {
+            style: "color: #f0f6fc; line-height: 1.6;",
+
+            div {
+                style: "margin-bottom: 1.5rem;",
+                h3 {
+                    style: "color: #58a6ff; font-size: 1rem; margin-bottom: 0.5rem;",
+                    "Getting Started"
+                }
+                p {
+                    style: "font-size: 0.875rem; color: #8b949e; margin-bottom: 1rem;",
+                    "Stackulator is a stack-based calculator/programming language. Values are pushed onto a stack and operations consume values from the top."
+                }
+            }
+
+            div {
+                style: "margin-bottom: 1.5rem;",
+                h3 {
+                    style: "color: #58a6ff; font-size: 1rem; margin-bottom: 0.5rem;",
+                    "Basic Operations"
+                }
                 div {
-                    key: "{i}",
-                    style: "padding: 0.5rem; background: rgba(255, 255, 255, 0.1); border-radius: 4px; border-left: 2px solid #10b981;",
                     div {
-                        style: "font-size: 0.75rem; color: rgba(255, 255, 255, 0.6); margin-bottom: 0.25rem;",
-                        "{i}"
+                        style: "font-size: 0.75rem; margin-bottom: 0.5rem;",
+                        code { style: "background: #21262d; padding: 0.25rem; border-radius: 3px;", "5 3 add" }
+                        span { style: "color: #8b949e; margin-left: 0.5rem;", "→ pushes 8" }
                     }
                     div {
-                        style: "font-family: monospace; font-size: 0.875rem; word-break: break-all;",
-                        "{value.get_repr(&vm_ref.parse_ctx)}"
+                        style: "font-size: 0.75rem; margin-bottom: 0.5rem;",
+                        code { style: "background: #21262d; padding: 0.25rem; border-radius: 3px;", "true false and" }
+                        span { style: "color: #8b949e; margin-left: 0.5rem;", "→ pushes false" }
                     }
+                }
+            }
+
+            div {
+                style: "margin-bottom: 1.5rem;",
+                h3 {
+                    style: "color: #58a6ff; font-size: 1rem; margin-bottom: 0.5rem;",
+                    "Functions"
+                }
+                div {
+                    style: "font-size: 0.75rem; margin-bottom: 0.5rem;",
+                    code {
+                        style: "background: #21262d; padding: 0.5rem; border-radius: 3px; display: block;",
+                        "dup = |_x| {{_x _x}};"
+                    }
+                }
+                p {
+                    style: "font-size: 0.75rem; color: #8b949e;",
+                    "Defines a function that duplicates the top stack value."
+                }
+            }
+
+            div {
+                style: "margin-bottom: 1.5rem;",
+                h3 {
+                    style: "color: #58a6ff; font-size: 1rem; margin-bottom: 0.5rem;",
+                    "Data Structures"
+                }
+                div {
+                    style: "font-size: 0.75rem; margin-bottom: 0.5rem;",
+                    code {
+                        style: "background: #21262d; padding: 0.5rem; border-radius: 3px; display: block;",
+                        "List(1 2 3)"
+                    }
+                    p { style: "color: #8b949e; margin-top: 0.25rem;", "Creates a list" }
+                }
+                div {
+                    style: "font-size: 0.75rem; margin-bottom: 0.5rem;",
+                    code {
+                        style: "background: #21262d; padding: 0.5rem; border-radius: 3px; display: block;",
+                        "Set(1 2 3)"
+                    }
+                    p { style: "color: #8b949e; margin-top: 0.25rem;", "Creates a set" }
+                }
+            }
+
+            div {
+                h3 {
+                    style: "color: #58a6ff; font-size: 1rem; margin-bottom: 0.5rem;",
+                    "Pattern Matching"
+                }
+                div {
+                    style: "font-size: 0.75rem;",
+                    code {
+                        style: "background: #21262d; padding: 0.5rem; border-radius: 3px; display: block; white-space: pre-wrap;",
+                        "5 | _x => _x 2 add, "
+                    }
+                    p { style: "color: #8b949e; margin-top: 0.25rem;", "Matches value and adds 2" }
                 }
             }
         }
@@ -263,26 +586,32 @@ fn Definitions(vm: Signal<VM>) -> Element {
     if defs.is_empty() {
         return rsx! {
             div {
-                style: "text-center py-8 text-white/60",
-                div { style: "text-2xl mb-2", "🔧" }
-                "No definitions"
+                style: "text-center py-8 color: #6e7681;",
+                div { style: "font-size: 1.5rem; margin-bottom: 0.5rem;", "⚙️" }
+                div { "No definitions yet" }
             }
         };
     }
 
     rsx! {
         div {
-            style: "display: flex; flex-direction: column; gap: 0.5rem;",
+            style: "display: flex; flex-direction: column; gap: 0.75rem;",
             for (name, body) in defs.iter() {
                 div {
                     key: "{name}",
-                    style: "padding: 0.5rem; background: rgba(255, 255, 255, 0.05); border-radius: 4px; border-left: 2px solid #3b82f6;",
+                    style: "
+                        padding: 0.75rem;
+                        background: #161b22;
+                        border: 1px solid #21262d;
+                        border-radius: 6px;
+                        border-left: 3px solid #a5a5a5;
+                    ",
                     div {
-                        style: "font-weight: 600; color: #93c5fd; margin-bottom: 0.25rem;",
+                        style: "font-weight: 600; color: #f0f6fc; margin-bottom: 0.5rem; font-size: 0.875rem;",
                         "{name}"
                     }
                     div {
-                        style: "font-family: monospace; font-size: 0.75rem; color: rgba(255, 255, 255, 0.8);",
+                        style: "font-family: monospace; font-size: 0.75rem; color: #8b949e;",
                         for (i, item) in body.iter().enumerate() {
                             div { key: "{i}", "{item}" }
                         }
@@ -301,31 +630,36 @@ fn Structs(vm: Signal<VM>) -> Element {
     if structs.is_empty() {
         return rsx! {
             div {
-                style: "text-center py-8 text-white/60",
-                div { style: "text-2xl mb-2", "🏗️" }
-                "No structs"
+                style: "text-center py-8 color: #6e7681;",
+                div { style: "font-size: 1.5rem; margin-bottom: 0.5rem;", "🏗️" }
+                div { "No structs defined" }
             }
         };
     }
 
     rsx! {
         div {
-            style: "display: flex; flex-direction: column; gap: 0.5rem;",
+            style: "display: flex; flex-direction: column; gap: 0.75rem;",
             for (name, body) in structs.iter() {
                 div {
                     key: "{name}",
-                    style: "padding: 0.5rem; background: rgba(255, 255, 255, 0.05); border-radius: 4px; border-left: 2px solid #f59e0b;",
+                    style: "
+                        padding: 0.75rem;
+                        background: #161b22;
+                        border: 1px solid #21262d;
+                        border-radius: 6px;
+                        border-left: 3px solid #f79000;
+                    ",
                     div {
-                        style: "font-weight: 600; color: #fbbf24; margin-bottom: 0.25rem;",
-                        "struct {name} {{"
+                        style: "font-weight: 600; color: #f79000; margin-bottom: 0.5rem; font-size: 0.875rem;",
+                        "struct {name}"
                     }
                     div {
-                        style: "font-family: monospace; font-size: 0.75rem; color: rgba(255, 255, 255, 0.8); margin-left: 0.5rem;",
+                        style: "font-family: monospace; font-size: 0.75rem; color: #8b949e; margin-left: 0.5rem;",
                         for (i, field) in body.iter().enumerate() {
                             div { key: "{i}", "{field}" }
                         }
                     }
-                    div { style: "color: rgba(255, 255, 255, 0.6);", "}}" }
                 }
             }
         }
@@ -340,47 +674,52 @@ fn Enums(vm: Signal<VM>) -> Element {
     if enums.is_empty() {
         return rsx! {
             div {
-                style: "text-center py-8 text-white/60",
-                div { style: "text-2xl mb-2", "🔀" }
-                "No enums"
+                style: "text-center py-8 color: #6e7681;",
+                div { style: "font-size: 1.5rem; margin-bottom: 0.5rem;", "🔀" }
+                div { "No enums defined" }
             }
         };
     }
 
     rsx! {
         div {
-            style: "display: flex; flex-direction: column; gap: 0.5rem;",
+            style: "display: flex; flex-direction: column; gap: 0.75rem;",
             for (name, variants) in enums.iter() {
                 div {
                     key: "{name}",
-                    style: "padding: 0.5rem; background: rgba(255, 255, 255, 0.05); border-radius: 4px; border-left: 2px solid #8b5cf6;",
+                    style: "
+                        padding: 0.75rem;
+                        background: #161b22;
+                        border: 1px solid #21262d;
+                        border-radius: 6px;
+                        border-left: 3px solid #a855f7;
+                    ",
                     div {
-                        style: "font-weight: 600; color: #a78bfa; margin-bottom: 0.25rem;",
-                        "enum {name} {{"
+                        style: "font-weight: 600; color: #a855f7; margin-bottom: 0.5rem; font-size: 0.875rem;",
+                        "enum {name}"
                     }
                     div {
                         style: "margin-left: 0.5rem;",
                         for (variant_name, variant_body) in variants.iter() {
                             div {
                                 key: "{variant_name}",
-                                style: "margin-bottom: 0.25rem;",
+                                style: "margin-bottom: 0.5rem;",
                                 div {
-                                    style: "color: #fbbf24; font-family: monospace; font-size: 0.875rem;",
+                                    style: "color: #f79000; font-family: monospace; font-size: 0.75rem;",
                                     "| {variant_name}("
                                 }
                                 if !variant_body.is_empty() {
                                     div {
-                                        style: "font-family: monospace; font-size: 0.75rem; color: rgba(255, 255, 255, 0.8); margin-left: 1rem;",
+                                        style: "font-family: monospace; font-size: 0.75rem; color: #8b949e; margin-left: 1rem;",
                                         for (i, field) in variant_body.iter().enumerate() {
                                             div { key: "{i}", "{field}" }
                                         }
                                     }
                                 }
-                                div { style: "color: rgba(255, 255, 255, 0.6); margin-left: 0.5rem;", ")" }
+                                div { style: "color: #8b949e; margin-left: 0.5rem;", ")" }
                             }
                         }
                     }
-                    div { style: "color: rgba(255, 255, 255, 0.6);", "}}" }
                 }
             }
         }
@@ -390,70 +729,122 @@ fn Enums(vm: Signal<VM>) -> Element {
 #[component]
 fn Examples(content: Signal<String>) -> Element {
     let examples = [
-        ("And", "true false and"),
-        ("Or", "true false or"),
-        ("Not", "true not"),
-        ("Add", "5 3 add"),
-        ("Subtract", "5 3 sub"),
-        ("Multiply", "5 3 mul"),
-        ("Divide", "5 3 div"),
-        ("Equality", "5 3 eq"),
-        ("Greater", "5 3 ge"),
-        ("Less", "5 3 le"),
-        ("Greater or Equal", "5 3 geq"),
-        ("Less or Equal", "5 3 leq"),
-        ("List","List(1 3 4)"),
-        ("List Push","List(1 3 4) 1 push"),
-        ("List Pop","List(1 3 4) pop"),
-        ("Stack length", "stack_size stack_size stack_size"),
-        ("Quotation/Lambdas", "[1 2 add]"),
-        ("Quotation/Lambdas Call", " 1 [ 2 add] apply"),
-        ("Take", "1 2 | _x _y | {_y _x _y}"),
-        ("Match suceeds", "1 | _x => _x 2 add, "),
-        ("Match fails", "1 | 3 => _x 2 add, "),
-        ("Match", "1 | 3 => _x 2 add,\n  | _x => _x _x add, "),
         (
-            "Loops",
-            "dup = |_x| = { _x _x };\n\n 1 while dup 10 le { dup 1 add  };  ",
-        ),
-        ("Function Defintion", "dup = |_x| {_x}"),
-        ("Struct Defintion", "struct Pair{ Int 'X}"),
-        ("Struct Instance", "struct Pair{ Int 'X};\nPair(1 Pair(2 3));"),
-        (
-            "Match Struct Instance",
-            "struct Pair{ Int 'X};\nPair(1 Pair(2 3)) | Pair(_x _y) => _y,;",
+            "Basics",
+            vec![
+                ("Push Integers", "5 3 2"),
+                ("Push Rationals", "5.2 0.3 1.2"),
+                ("Add", "5 3 add"),
+                ("Boolean Logic", "true false and"),
+                ("Comparison", "5 3 ge"),
+                ("Stack Operations", "1 2 3 stack_size"),
+            ],
         ),
         (
-            "Enum Definition",
-            "enum Either{
-   | Left( 'A )
-   | Right( 'B)
-}",
+            "Take Operations",
+            vec![
+                ("Simple Take", "5 10 |_x _y| { _x _y add }"),
+                ("Multiple Values", "1 2 3 |_a _b _c| { _c _b _a }"),
+                ("Variable Reuse", "42 |_x| { _x _x _x }"),
+                ("Nested Take", "1 2 |_x _y| { _x |_z| { _z _y add } }"),
+            ],
         ),
         (
-            "Enum Instance",
-            "enum Either{
-   | Left( 'A )
-   | Right( 'B)
-};\nEither::Left(1);",
+            "Data Structures",
+            vec![
+                ("Create List", "List(1 2 3 4)"),
+                ("List Operations", "List(1 2 3) 4 push"),
+                ("List with Variables", "5 10 |_x _y| { List(_x _y _x) }"),
+                ("Create Set", "Set(1 2 3 2)"),
+                ("Set Operations", "Set(1 2) Set(2 3) union"),
+                ("List Access", "List(10 20 30) 1 get"),
+            ],
         ),
         (
-            "Match Enum Instance",
-            "enum Either{
-   | Left( 'A )
-   | Right( 'B)
-};\n\n Either::Left(1)\n\t | Either::Left(_x) => _x ",
+            "Functions",
+            vec![
+                ("Simple Function", "dup = |_x| {_x _x};"),
+                ("Using Function", "5 dup"),
+                ("Swap Function", "swap = |_x _y| {_y _x};\n1 2 swap"),
+                ("Drop Function", "drop = |_x| {};\n42 drop"),
+                ("Over Function", "over = |_x _y| {_y _x _y};\n1 2 over"),
+            ],
         ),
-        ("Protocol defintnion","struct Dummy{Int} ;
+        (
+            "Pattern Matching",
+            vec![
+                ("Simple Match", "5 | _x => _x 2 add,"),
+                ("Literal Match", "7 | 5 => true,\n  | _x => false,"),
+                ("List Pattern", "List(1 2 3) | List(_x _y _z) => _x _y add,"),
+                ("Rest Pattern", "List(1 2 3 4) | List(_x $_rest) => _rest,"),
+                (
+                    "Middle Pattern",
+                    "List(1 2 3 4 5) | List(_first $_middle _last) => _middle,",
+                ),
+                //("Set Pattern", "Set(1 2 3) | Set(_x $_rest) => _x,"),
+                (
+                    "Type Patterns",
+                    "42 | Int(_) => true, 42.0 | Rat(_) => false,",
+                ),
+            ],
+        ),
+        (
+            "Control Flow",
+            vec![
+                ("Conditional", "true ? { 42 }"),
+                ("Simple Loop", "1 while dup 5 le { dup 1 add }"),
+                (
+                    "Break/Return",
+                    "1 while true { dup 10 ge ? { break } dup 1 add }",
+                ),
+            ],
+        ),
+        (
+            "Struct and Enums",
+            vec![
+                ("Struct Definition", "struct Point { Int Int };"),
+                ("Struct Usage", "struct Point { Int Int };\nPoint(10 20);"),
+                (
+                    "Struct Pattern",
+                    "struct Point { Int Int };\nPoint(5 10) | Point(_x _y) => _x _y add,",
+                ),
+                (
+                    "Enum Definition",
+                    "enum Option {\n  | Some('T)\n  | None()\n};",
+                ),
+                (
+                    "Enum Usage",
+                    "enum Option { | Some('T) | None() };\nOption::Some(42);",
+                ),
+                (
+                    "Enum Pattern",
+                    "enum Option { | Some('T) | None() };\nOption::Some(42) | Option::Some(_x) => _x,",
+                ),
+            ],
+        ),
+        (
+            "Protocols",
+            vec![
+                (
+                    "Some 'functions' can be used on different types",
+                    "1 2 add \n0.1 0.3 add\n true false or\n 3 2 or\n",
+                ),
+                (
+                    "Defining addition on a custom Type",
+                    "struct Dummy{Int} ;
 
 add(Dummy Dummy) = | Dummy(_x) Dummy(_y) => Dummy(_x _y add), ;
 
-Dummy(1) Dummy(2) add;"),
-
-
+Dummy(1) Dummy(2) add;",
+                ),
+            ],
+        ),
         (
-            "Fibonacci",
-            "drop = |_x| {};
+            "Algorithms",
+            vec![(
+                "Fibonacci",
+                "drop = |_x| {};
+
 drop2 = |_x _y| { };
 
 dup = |_x| {_x _x} ;
@@ -474,29 +865,107 @@ fib = | _n |{ 1 1 _n }
 
 0 while dup 100 leq  {
     1 add dup fib swap
-} ;
-",
+} ;",
+            )],
         ),
     ];
 
     rsx! {
         div {
-            style: "display: flex; flex-direction: column; gap: 0.5rem;",
-            for (title, code) in examples.iter() {
+            style: "display: flex; flex-direction: column; gap: 1rem;",
+            for (category, examples) in examples.iter() {
                 div {
-                    key: "{title}",
-                    style: "padding: 0.5rem; background: rgba(255, 255, 255, 0.05); border-radius: 4px; border-left: 2px solid #06b6d4; cursor: pointer;",
-                    onclick: {
-                        let code = code.to_string();
-                        move |_| content.set(code.clone())
-                    },
-                    div {
-                        style: "font-weight: 600; color: #67e8f9; font-size: 0.875rem; margin-bottom: 0.25rem;",
-                        "{title}"
+                    key: "{category}",
+                    h4 {
+                        style: "color: #58a6ff; font-size: 0.875rem; margin-bottom: 0.5rem; font-weight: 600;",
+                        "{category}"
                     }
                     div {
-                        style: "font-family: monospace; font-size: 0.75rem; background: rgba(0, 0, 0, 0.3); padding: 0.25rem; border-radius: 3px;",
-                        "{code}"
+                        style: "display: flex; flex-direction: column; gap: 0.5rem;",
+                        for (title, code) in examples.iter() {
+                            div {
+                                key: "{title}",
+                                style: "
+                                    padding: 0.75rem;
+                                    background: #161b22;
+                                    border: 1px solid #21262d;
+                                    border-radius: 6px;
+                                    cursor: pointer;
+                                    border-left: 3px solid #21262d;
+                                    transition: all 0.2s;
+                                ",
+                                class: "example-item",
+                                onclick: {
+                                    let code = code.to_string();
+                                    move |_| content.set(code.clone())
+                                },
+                                onmouseenter: move |_| {},
+                                onmouseleave: move |_|{},
+                                div {
+                                    style: "font-weight: 500; color: #f0f6fc; font-size: 0.75rem; margin-bottom: 0.5rem;",
+                                    "{title}"
+                                }
+                                pre {
+                                    style: "
+                                        font-family: monospace;
+                                        font-size: 0.75rem;
+                                        background: #0d1117;
+                                        padding: 0.5rem;
+                                        border-radius: 4px;
+                                        margin: 0;
+                                        color: #8b949e;
+                                        white-space: pre-wrap;
+                                        line-height: 1.4;
+                                    ",
+                                    "{code}"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[component]
+fn Protocols(vm: Signal<VM>) -> Element {
+    let vm_ref = vm.read();
+    let defs = vm_ref.get_protocols();
+
+    if defs.is_empty() {
+        return rsx! {
+            div {
+                style: "text-center py-8 color: #6e7681;",
+                div { style: "font-size: 1.5rem; margin-bottom: 0.5rem;", "⚙️" }
+                div { "No definitions yet" }
+            }
+        };
+    }
+
+    rsx! {
+        div {
+            style: "display: flex; flex-direction: column; gap: 0.75rem;",
+            for (name, signatures) in defs.into_iter() {
+                div {
+                    key: "{name}",
+                    style: "
+                        padding: 0.75rem;
+                        background: #161b22;
+                        border: 1px solid #21262d;
+                        border-radius: 6px;
+                        border-left: 3px solid #a5a5a5;
+                    ",
+                    div {
+                        style: "font-weight: 600; color: #f0f6fc; margin-bottom: 0.5rem; font-size: 0.875rem;",
+                        "{name}"
+                    }
+                    for (i,signature) in signatures.into_iter().enumerate(){
+                     div {
+                        key: "{i}",
+                        "{signature}"
+
+                    }
                     }
                 }
             }

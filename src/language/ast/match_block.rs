@@ -107,6 +107,7 @@ impl Pattern {
             _ => vec![],
         }
     }
+
     pub fn pattern_match(&self, val: Values, vars: &mut ChainMap) -> Flow {
         dbg!((self, &val));
         match (self, val) {
@@ -186,25 +187,44 @@ impl Pattern {
             }
 
             (Pattern::TypeList(ListPattern::FullList(pats)), Values::List(mut x)) => {
+                if pats.len() != x.len() {
+                    return Flow::Cont;
+                }
                 for pat in pats {
-                    match x.pop_front().map(|x| pat.pattern_match(x, vars)) {
+                    match x.pop_front() {
+                        Some(val) => {
+                            if pat.pattern_match(val, vars) == Flow::Cont {
+                                return Flow::Cont;
+                            }
+                        }
                         None => return Flow::Cont,
-                        _ => (),
                     }
                 }
                 Flow::Ok
             }
             (Pattern::TypeList(ListPattern::StartEnd(start, None, end)), Values::List(mut x)) => {
+                if x.len() < start.len() + end.len() {
+                    return Flow::Cont;
+                }
+
                 for pat in start {
-                    match x.pop_front().map(|x| pat.pattern_match(x, vars)) {
+                    match x.pop_front() {
+                        Some(val) => {
+                            if pat.pattern_match(val, vars) == Flow::Cont {
+                                return Flow::Cont;
+                            }
+                        }
                         None => return Flow::Cont,
-                        _ => (),
                     }
                 }
-                for pat in end {
-                    match x.pop_back().map(|x| pat.pattern_match(x, vars)) {
+                for pat in end.iter().rev() {
+                    match x.pop_back() {
+                        Some(val) => {
+                            if pat.pattern_match(val, vars) == Flow::Cont {
+                                return Flow::Cont;
+                            }
+                        }
                         None => return Flow::Cont,
-                        _ => (),
                     }
                 }
                 Flow::Ok
@@ -213,21 +233,32 @@ impl Pattern {
                 Pattern::TypeList(ListPattern::StartEnd(start, Some(var), end)),
                 Values::List(mut x),
             ) => {
+                if x.len() < start.len() + end.len() {
+                    return Flow::Cont;
+                }
+
                 for pat in start {
-                    match x.pop_front().map(|x| pat.pattern_match(x, vars)) {
+                    match x.pop_front() {
+                        Some(val) => {
+                            if pat.pattern_match(val, vars) == Flow::Cont {
+                                return Flow::Cont;
+                            }
+                        }
                         None => return Flow::Cont,
-                        _ => (),
                     }
                 }
 
                 for pat in end.iter().rev() {
-                    match x.pop_back().map(|x| pat.pattern_match(x, vars)) {
+                    match x.pop_back() {
+                        Some(val) => {
+                            if pat.pattern_match(val, vars) == Flow::Cont {
+                                return Flow::Cont;
+                            }
+                        }
                         None => return Flow::Cont,
-                        _ => (),
                     }
                 }
 
-                dbg!(&x);
                 vars.insert(*var, Values::List(x.to_owned()));
                 Flow::Ok
             }
@@ -237,118 +268,70 @@ impl Pattern {
                 vars.insert(*var, x.to_owned());
                 Flow::Ok
             }
-            (Pattern::TypeSet(SetPattern::FullSet(pats)), Values::Set(x)) => {
-                /*for pat in pats {
-                    match x.pop_first().map(|x| pat.pattern_match(x, vars)) {
-                        None => return Flow::Cont,
-                        _ => (),
-                    }
-                }*/
-                let mut pats = pats.clone();
-                let mut x = x.clone();
-                let mut rest = BTreeSet::new();
-                pats.sort();
-                for pat in pats {
-                    loop {
-                        match x.pop_first() {
-                            Some(x) => {
-                                if matches!(pat.pattern_match(x.clone(), vars), Flow::Cont) {
-                                    rest.insert(x);
-                                } else {
-                                    break;
-                                }
-                            }
-                            None => {
-                                return Flow::Cont;
-                            }
-                        }
-                        x = rest.clone();
-                    }
-                }
-                if rest.is_empty() {
-                    Flow::Ok
-                } else {
-                    Flow::Cont
-                }
-            }
-            (Pattern::TypeSet(SetPattern::Front(pats, Some(rest_name))), Values::Set(x)) => {
-                /*for pat in start {
-                    match x.pop_front().map(|x| pat.pattern_match(x, vars)) {
-                        None => return Flow::Cont,
-                        _ => (),
-                    }
-                }
-                for pat in end {
-                    match x.pop_back().map(|x| pat.pattern_match(x, vars)) {
-                        None => return Flow::Cont,
-                        _ => (),
-                    }
-                }
-                 */
-                let mut pats = pats.clone();
-                let mut x = x.clone();
 
-                let mut rest = BTreeSet::new();
-                pats.sort();
+            (Pattern::TypeSet(SetPattern::FullSet(pats)), Values::Set(x)) => {
+                if pats.len() != x.len() {
+                    return Flow::Cont;
+                }
+
+                let mut remaining_set = x.clone();
+                let mut temp_vars = ChainMap::default();
+
                 for pat in pats {
-                    loop {
-                        match x.pop_first() {
-                            Some(x) => {
-                                if matches!(pat.pattern_match(x.clone(), vars), Flow::Cont) {
-                                    rest.insert(x);
-                                } else {
-                                    break;
-                                }
-                            }
-                            None => {
-                                return Flow::Cont;
-                            }
+                    let mut matched = false;
+                    let mut to_remove = None;
+
+                    for elem in &remaining_set {
+                        temp_vars.push();
+                        if pat.pattern_match(elem.clone(), &mut temp_vars) == Flow::Ok {
+                            to_remove = Some(elem.clone());
+                            matched = true;
+                            temp_vars.pop();
+                            break;
                         }
-                        x = rest.clone();
+                        temp_vars.pop();
+                    }
+
+                    if let Some(elem) = to_remove {
+                        remaining_set.remove(&elem);
+                        // Re-run the pattern match to bind variables
+                        pat.pattern_match(elem, vars);
+                    } else {
+                        return Flow::Cont;
                     }
                 }
-                vars.insert(*rest_name, Values::Set(rest));
 
                 Flow::Ok
             }
-            (Pattern::TypeSet(SetPattern::Front(pats, None)), Values::Set(x)) => {
-                /*for pat in start {
-                    match x.pop_front().map(|x| pat.pattern_match(x, vars)) {
-                        None => return Flow::Cont,
-                        _ => (),
-                    }
-                }
-                for pat in end {
-                    match x.pop_back().map(|x| pat.pattern_match(x, vars)) {
-                        None => return Flow::Cont,
-                        _ => (),
-                    }
-                }
-                vars.insert(*var, Values::Set(x.to_owned()));
-                */
-                let mut pats = pats.clone();
-                let mut x = x.clone();
 
-                let mut rest = BTreeSet::new();
-                pats.sort();
+            (Pattern::TypeSet(SetPattern::Front(pats, rest_var)), Values::Set(x)) => {
+                let mut remaining_set = x.clone();
+                let mut temp_vars = ChainMap::default();
+
                 for pat in pats {
-                    loop {
-                        match x.pop_first() {
-                            Some(x) => {
-                                if matches!(pat.pattern_match(x.clone(), vars), Flow::Cont) {
-                                    rest.insert(x);
-                                } else {
-                                    break;
-                                }
-                            }
-                            None => {
-                                return Flow::Cont;
-                            }
+                    let mut to_remove = None;
+
+                    for elem in &remaining_set {
+                        temp_vars.push();
+                        if pat.pattern_match(elem.clone(), &mut temp_vars) == Flow::Ok {
+                            to_remove = Some(elem.clone());
+                            temp_vars.pop();
+                            break;
                         }
-                        x = rest.clone();
+                        temp_vars.pop();
+                    }
+
+                    if let Some(elem) = to_remove {
+                        remaining_set.remove(&elem);
+                        pat.pattern_match(elem, vars);
+                    } else {
+                        return Flow::Cont;
                     }
                 }
-                //vars.insert(*rest_name, Values::Set(rest));
+
+                if let Some(var_name) = rest_var {
+                    vars.insert(*var_name, Values::Set(remaining_set));
+                }
 
                 Flow::Ok
             }
@@ -361,10 +344,17 @@ impl Pattern {
                     values: Some(mut x),
                 },
             ) if pat_name == &name => {
+                if pats.len() != x.len() {
+                    return Flow::Cont;
+                }
                 for pat in pats.iter() {
-                    match x.pop_front().map(|x| pat.pattern_match(x, vars)) {
+                    match x.pop_front() {
+                        Some(val) => {
+                            if pat.pattern_match(val, vars) == Flow::Cont {
+                                return Flow::Cont;
+                            }
+                        }
                         None => return Flow::Cont,
-                        _ => (),
                     }
                 }
                 Flow::Ok
@@ -377,16 +367,28 @@ impl Pattern {
                     values: Some(mut x),
                 },
             ) if pat_name == &name => {
+                if x.len() < start.len() + end.len() {
+                    return Flow::Cont;
+                }
+
                 for pat in start {
-                    match x.pop_front().map(|x| pat.pattern_match(x, vars)) {
+                    match x.pop_front() {
+                        Some(val) => {
+                            if pat.pattern_match(val, vars) == Flow::Cont {
+                                return Flow::Cont;
+                            }
+                        }
                         None => return Flow::Cont,
-                        _ => (),
                     }
                 }
-                for pat in end {
-                    match x.pop_back().map(|x| pat.pattern_match(x, vars)) {
+                for pat in end.iter().rev() {
+                    match x.pop_back() {
+                        Some(val) => {
+                            if pat.pattern_match(val, vars) == Flow::Cont {
+                                return Flow::Cont;
+                            }
+                        }
                         None => return Flow::Cont,
-                        _ => (),
                     }
                 }
                 Flow::Ok
@@ -399,21 +401,32 @@ impl Pattern {
                     values: Some(mut x),
                 },
             ) if pat_name == &name => {
+                if x.len() < start.len() + end.len() {
+                    return Flow::Cont;
+                }
+
                 for pat in start {
-                    match x.pop_front().map(|x| pat.pattern_match(x, vars)) {
+                    match x.pop_front() {
+                        Some(val) => {
+                            if pat.pattern_match(val, vars) == Flow::Cont {
+                                return Flow::Cont;
+                            }
+                        }
                         None => return Flow::Cont,
-                        _ => (),
                     }
                 }
 
                 for pat in end.iter().rev() {
-                    match x.pop_back().map(|x| pat.pattern_match(x, vars)) {
+                    match x.pop_back() {
+                        Some(val) => {
+                            if pat.pattern_match(val, vars) == Flow::Cont {
+                                return Flow::Cont;
+                            }
+                        }
                         None => return Flow::Cont,
-                        _ => (),
                     }
                 }
 
-                dbg!(&x);
                 vars.insert(*var, Values::List(x.to_owned()));
                 Flow::Ok
             }
@@ -426,10 +439,17 @@ impl Pattern {
                     values: Some(mut x),
                 },
             ) if pat_name == &name && var_name == &var => {
+                if pats.len() != x.len() {
+                    return Flow::Cont;
+                }
                 for pat in pats.iter() {
-                    match x.pop_front().map(|x| pat.pattern_match(x, vars)) {
+                    match x.pop_front() {
+                        Some(val) => {
+                            if pat.pattern_match(val, vars) == Flow::Cont {
+                                return Flow::Cont;
+                            }
+                        }
                         None => return Flow::Cont,
-                        _ => (),
                     }
                 }
                 Flow::Ok
@@ -442,16 +462,28 @@ impl Pattern {
                     values: Some(mut x),
                 },
             ) if pat_name == &name && var_name == &var => {
+                if x.len() < start.len() + end.len() {
+                    return Flow::Cont;
+                }
+
                 for pat in start {
-                    match x.pop_front().map(|x| pat.pattern_match(x, vars)) {
+                    match x.pop_front() {
+                        Some(val) => {
+                            if pat.pattern_match(val, vars) == Flow::Cont {
+                                return Flow::Cont;
+                            }
+                        }
                         None => return Flow::Cont,
-                        _ => (),
                     }
                 }
-                for pat in end {
-                    match x.pop_back().map(|x| pat.pattern_match(x, vars)) {
+                for pat in end.iter().rev() {
+                    match x.pop_back() {
+                        Some(val) => {
+                            if pat.pattern_match(val, vars) == Flow::Cont {
+                                return Flow::Cont;
+                            }
+                        }
                         None => return Flow::Cont,
-                        _ => (),
                     }
                 }
                 Flow::Ok
@@ -468,21 +500,32 @@ impl Pattern {
                     values: Some(mut x),
                 },
             ) if pat_name == &name && var_name == &variant => {
+                if x.len() < start.len() + end.len() {
+                    return Flow::Cont;
+                }
+
                 for pat in start {
-                    match x.pop_front().map(|x| pat.pattern_match(x, vars)) {
+                    match x.pop_front() {
+                        Some(val) => {
+                            if pat.pattern_match(val, vars) == Flow::Cont {
+                                return Flow::Cont;
+                            }
+                        }
                         None => return Flow::Cont,
-                        _ => (),
                     }
                 }
 
                 for pat in end.iter().rev() {
-                    match x.pop_back().map(|x| pat.pattern_match(x, vars)) {
+                    match x.pop_back() {
+                        Some(val) => {
+                            if pat.pattern_match(val, vars) == Flow::Cont {
+                                return Flow::Cont;
+                            }
+                        }
                         None => return Flow::Cont,
-                        _ => (),
                     }
                 }
 
-                dbg!(&x);
                 vars.insert(*var, Values::List(x.to_owned()));
                 Flow::Ok
             }
@@ -661,16 +704,16 @@ impl Parse for Pattern {
             Rule::bools => Pattern::Bool("true" == pairs.as_str()),
             Rule::varName => Pattern::Variable(ctx.insert_var(pairs.as_str())),
             Rule::dontCare => Pattern::DontCare,
-            Rule::intPattern => Pattern::TypeInt(Some(ctx.insert_var(pairs.as_str()))),
+            Rule::intPattern => Pattern::TypeInt(Some(ctx.insert_var(pairs.into_inner().next().unwrap().as_str()))),
             Rule::intDontCarePattern => Pattern::TypeInt(None),
-            Rule::ratPattern => Pattern::TypeInt(Some(ctx.insert_var(pairs.as_str()))),
+            Rule::ratPattern => Pattern::TypeFloat(Some(ctx.insert_var(pairs.into_inner().next().unwrap().as_str()))),
             Rule::ratDontCarePattern => Pattern::TypeFloat(None),
-            Rule::boolPattern => Pattern::TypeBool(Some(ctx.insert_var(pairs.as_str()))),
+            Rule::boolPattern => Pattern::TypeBool(Some(ctx.insert_var(pairs.into_inner().next().unwrap().as_str()))),
             Rule::boolDontCarePattern => Pattern::TypeBool(None),
-            Rule::stackPattern => Pattern::TypeStack(Some(ctx.insert_var(pairs.as_str()))),
+            Rule::stackPattern => Pattern::TypeStack(Some(ctx.insert_var(pairs.into_inner().next().unwrap().as_str()))),
             Rule::stackDontCarePattern => Pattern::TypeStack(None),
             Rule::listAllpattern => {
-                Pattern::TypeList(ListPattern::All(Some(ctx.insert_var(pairs.as_str()))))
+                Pattern::TypeList(ListPattern::All(Some(ctx.insert_var(pairs.into_inner().next().unwrap().as_str()))))
             }
             Rule::listAllDontCarepattern => Pattern::TypeList(ListPattern::All(None)),
             Rule::setAllDontCarepattern => Pattern::TypeSet(SetPattern::All(None)),

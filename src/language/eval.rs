@@ -277,12 +277,13 @@ impl Representation<(), ParseCtx> for EvalError {
                     context.lookup_type_name(*name)
                 )
             }
-            EvalError::IndexOutOfBounds => todo!(),
+            EvalError::IndexOutOfBounds => "Index out of bounds".to_string(),
             EvalError::Underflow => "Underflow".to_string(),
         }
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Flow {
     Break,
     Ok,

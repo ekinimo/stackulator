@@ -189,7 +189,7 @@ impl Representation<(), ParseCtx> for Type {
             Type::Set => "Set".to_string(),
             Type::Map => "Map".to_string(),
             Type::CustomType(t) => context.lookup_type_name(*t),
-            Type::GenericTyp(t) => context.lookup_type_name(*t),
+            Type::GenericTyp(_t) => format!("??"),
         }
     }
 }

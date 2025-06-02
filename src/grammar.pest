@@ -45,7 +45,6 @@ primitives             = {
                                             |"f2i"       
                                             |"l22"       
                                             |"s2l"       
-
 }
 
 lowercase              = _{'a' .. 'z'}

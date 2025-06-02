@@ -278,4 +278,32 @@ impl VM {
         }
         map.into_iter().collect()
     }
+
+    pub fn get_protocols(&self) -> Vec<(String, Vec<String>)> {
+        self.env
+            .protocol_data
+            .iter()
+            .map(|(fun_id, implement)| {
+                (
+                    self.parse_ctx.lookup_call_name(*fun_id),
+                    implement
+                        .iter()
+                        .map(|(types, (return_types, _call_type))| {
+                            let ins = types
+                                .iter()
+                                .map(|t| t.get_repr(&self.parse_ctx))
+                                .collect::<Vec<_>>()
+                                .join(" ");
+                            let outs = return_types
+                                .iter()
+                                .map(|t| t.get_repr(&self.parse_ctx))
+                                .collect::<Vec<_>>()
+                                .join(" ");
+                            format!("{ins} -> {outs}")
+                        })
+                        .collect::<Vec<_>>(),
+                )
+            })
+            .collect::<Vec<_>>()
+    }
 }

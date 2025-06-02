@@ -198,7 +198,7 @@ impl Default for Env {
             ret.protocol_arity.insert(fun, (2, Some(1)));
         }
         {
-            let fun = ctx.insert_fun("mult");
+            let fun = ctx.insert_fun("mul");
             let mut map = HashMap::new();
             map.insert(
                 vec![Type::Integer, Type::Integer],
@@ -1021,7 +1021,7 @@ impl Default for Env {
                                 let list = Values::List(data);
                                 values.push(list);
                             }
-                            _ => unreachable!(),
+                            x => unreachable!("{:?}", x),
                         }
                         Ok(())
                     })),
@@ -1040,7 +1040,7 @@ impl Default for Env {
                                 let list = Values::Set(data);
                                 values.push(list);
                             }
-                            _ => unreachable!(),
+                            x => unreachable!("{:?}", x),
                         }
                         Ok(())
                     })),
@@ -1098,7 +1098,7 @@ impl Default for Env {
             let fun = ctx.insert_fun("pop_first");
             let mut map = HashMap::new();
             map.insert(
-                vec![Type::List, Type::GenericTyp(usize::MAX)],
+                vec![Type::List],
                 (
                     vec![Type::GenericTyp(usize::MAX)],
                     CallType::Fun(Rc::new(|values, _env, _chain_map| {
@@ -1108,7 +1108,7 @@ impl Default for Env {
                                 if data.is_empty() {
                                     return Err(EvalError::IndexOutOfBounds);
                                 }
-                                let res = data.pop_front().unwrap();
+                                let res = data.pop_back().unwrap();
                                 let list = Values::List(data);
                                 values.push(list);
                                 values.push(res);
@@ -1121,7 +1121,7 @@ impl Default for Env {
                 ),
             );
             map.insert(
-                vec![Type::Set, Type::GenericTyp(usize::MAX)],
+                vec![Type::Set],
                 (
                     vec![Type::GenericTyp(usize::MAX)],
                     CallType::Fun(Rc::new(|values, _env, _chain_map| {
@@ -1150,7 +1150,7 @@ impl Default for Env {
             let fun = ctx.insert_fun("pop");
             let mut map = HashMap::new();
             map.insert(
-                vec![Type::List, Type::GenericTyp(usize::MAX)],
+                vec![Type::List],
                 (
                     vec![Type::GenericTyp(usize::MAX)],
                     CallType::Fun(Rc::new(|values, _env, _chain_map| {
@@ -1160,7 +1160,7 @@ impl Default for Env {
                                 if data.is_empty() {
                                     return Err(EvalError::IndexOutOfBounds);
                                 }
-                                let res = data.pop_back().unwrap();
+                                let res = data.pop_front().unwrap();
                                 let list = Values::List(data);
                                 values.push(list);
                                 values.push(res);
@@ -1173,7 +1173,7 @@ impl Default for Env {
                 ),
             );
             map.insert(
-                vec![Type::Set, Type::GenericTyp(usize::MAX)],
+                vec![Type::Set],
                 (
                     vec![Type::GenericTyp(usize::MAX)],
                     CallType::Fun(Rc::new(|values, _env, _chain_map| {
@@ -1183,7 +1183,7 @@ impl Default for Env {
                                 if data.is_empty() {
                                     return Err(EvalError::IndexOutOfBounds);
                                 }
-                                let res = data.pop_last().unwrap();
+                                let res = data.pop_first().unwrap();
                                 let list = Values::Set(data);
                                 values.push(list);
                                 values.push(res);
