@@ -12,6 +12,7 @@ pub struct ParseCtx {
     type_idx: HashMap<String, usize>,
     tag_idx: HashMap<String, usize>,
     field_idx: HashMap<String, usize>,
+    var_scopes: Vec<HashMap<String, usize>>,
 }
 
 impl Default for ParseCtx {
@@ -27,6 +28,7 @@ impl Default for ParseCtx {
             type_idx: Default::default(),
             tag_idx: Default::default(),
             field_idx: Default::default(),
+            var_scopes: vec![HashMap::new()],
         };
         ret.insert_fun("add");
         ret.insert_fun("sub");
@@ -68,18 +70,53 @@ impl Default for ParseCtx {
 
         ret.insert_fun("map");
         ret.insert_fun("apply");
+
+        ret.insert_fun("i2f");
+        ret.insert_fun("f2i");
+        ret.insert_fun("l2s");
+        ret.insert_fun("s2l");
+
         ret
     }
 }
 
 impl ParseCtx {
+    pub fn push_scope(&mut self) {
+        self.var_scopes.push(HashMap::new());
+    }
+
+    pub fn pop_scope(&mut self) {
+        self.var_scopes.pop();
+        if self.var_scopes.is_empty() {
+            self.var_scopes.push(HashMap::new());
+        }
+    }
+
+    pub fn lookup_var_in_scope(&self, name: &str) -> Option<usize> {
+        for scope in self.var_scopes.iter().rev() {
+            if let Some(&id) = scope.get(name) {
+                return Some(id);
+            }
+        }
+        None
+    }
     pub fn insert_var(&mut self, var: impl Into<String> + Clone) -> usize {
+
         match self.var_idx.entry(var.clone().into()) {
-            std::collections::hash_map::Entry::Occupied(occ) => *occ.get(),
+            std::collections::hash_map::Entry::Occupied(occ) => {
+                let id = *occ.get();
+                if let Some(scope) = self.var_scopes.last_mut() {
+                    scope.insert(var.into(), id);
+                }
+                id
+            }
             std::collections::hash_map::Entry::Vacant(vac) => {
                 let len = self.var_names.len();
-                self.var_names.push(var.into());
+                self.var_names.push(var.clone().into());
                 vac.insert(len);
+                if let Some(scope) = self.var_scopes.last_mut() {
+                    scope.insert(var.into(), len);
+                }
                 len
             }
         }

@@ -130,9 +130,14 @@ impl Parse for Ast {
             }
             Rule::bools => Ast::Bool("true" == pairs.as_str()),
             Rule::primitives => Ast::PrimitiveCall(Primitives::parse(pairs, ctx)),
-
-            Rule::funName => Ast::Call(ctx.insert_fun(pairs.as_str())),
-            Rule::varName => Ast::Var(ctx.insert_var(pairs.as_str())),
+            Rule::identifier => {
+                let name = pairs.as_str();
+                if let Some(var_id) = ctx.lookup_var_in_scope(name) {
+                    Ast::Var(var_id)
+                } else {
+                    Ast::Call(ctx.insert_fun(name))
+                }
+            }
             Rule::take => Ast::Take(Take::parse(pairs, ctx)),
             Rule::whileLoop => Ast::While(While::parse(pairs, ctx)),
             Rule::ifTrue => Ast::IfTrue(IfTrue::parse(pairs, ctx)),

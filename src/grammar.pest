@@ -43,16 +43,15 @@ primitives             = {
                                             |"apply"     
                                             |"i2f"       
                                             |"f2i"       
-                                            |"l22"       
+                                            |"l2i"
                                             |"s2l"       
 }
 
 lowercase              = _{'a' .. 'z'}
 uppercase              = _{'A' .. 'Z'}
-funName                = @{lowercase ~ (lowercase | uppercase | zero |nonZero | "_" )* }
-
-varName                = @{"_" ~ lowercase ~ (lowercase | uppercase | zero |nonZero | "_" )*  }
-
+funName                = @{(lowercase| "_") ~ (lowercase | uppercase | zero |nonZero | "_" )* }
+varName                = @{("_" |lowercase) ~ (lowercase | uppercase | zero |nonZero | "_" )*  }
+identifier             = @{(lowercase |"_") ~ (lowercase | uppercase | zero |nonZero | "_" )* }
 takeVars               = {"|" ~ varName+  ~"|" }
 block                  = { "{" ~ atom* ~"}" }
 take                   = { takeVars ~ block}
@@ -179,7 +178,7 @@ typeInst                  = { typName  ~ "(" ~atom* ~("," ~ atom+)* ~ ")"  }
 atom                   = _{ 
  	  num | bools | stack | list | set | map | variantInst | typeInst  
    | ret | brek | take  | whileLoop | matchBlock | ifTrue
-   |  funName | varName
+   |  identifier
 }
 
 insides                = _{atom* }

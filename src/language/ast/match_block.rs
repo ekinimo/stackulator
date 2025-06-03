@@ -704,17 +704,25 @@ impl Parse for Pattern {
             Rule::bools => Pattern::Bool("true" == pairs.as_str()),
             Rule::varName => Pattern::Variable(ctx.insert_var(pairs.as_str())),
             Rule::dontCare => Pattern::DontCare,
-            Rule::intPattern => Pattern::TypeInt(Some(ctx.insert_var(pairs.into_inner().next().unwrap().as_str()))),
+            Rule::intPattern => Pattern::TypeInt(Some(
+                ctx.insert_var(pairs.into_inner().next().unwrap().as_str()),
+            )),
             Rule::intDontCarePattern => Pattern::TypeInt(None),
-            Rule::ratPattern => Pattern::TypeFloat(Some(ctx.insert_var(pairs.into_inner().next().unwrap().as_str()))),
+            Rule::ratPattern => Pattern::TypeFloat(Some(
+                ctx.insert_var(pairs.into_inner().next().unwrap().as_str()),
+            )),
             Rule::ratDontCarePattern => Pattern::TypeFloat(None),
-            Rule::boolPattern => Pattern::TypeBool(Some(ctx.insert_var(pairs.into_inner().next().unwrap().as_str()))),
+            Rule::boolPattern => Pattern::TypeBool(Some(
+                ctx.insert_var(pairs.into_inner().next().unwrap().as_str()),
+            )),
             Rule::boolDontCarePattern => Pattern::TypeBool(None),
-            Rule::stackPattern => Pattern::TypeStack(Some(ctx.insert_var(pairs.into_inner().next().unwrap().as_str()))),
+            Rule::stackPattern => Pattern::TypeStack(Some(
+                ctx.insert_var(pairs.into_inner().next().unwrap().as_str()),
+            )),
             Rule::stackDontCarePattern => Pattern::TypeStack(None),
-            Rule::listAllpattern => {
-                Pattern::TypeList(ListPattern::All(Some(ctx.insert_var(pairs.into_inner().next().unwrap().as_str()))))
-            }
+            Rule::listAllpattern => Pattern::TypeList(ListPattern::All(Some(
+                ctx.insert_var(pairs.into_inner().next().unwrap().as_str()),
+            ))),
             Rule::listAllDontCarepattern => Pattern::TypeList(ListPattern::All(None)),
             Rule::setAllDontCarepattern => Pattern::TypeSet(SetPattern::All(None)),
 
@@ -1084,6 +1092,7 @@ impl Parse for Pattern {
 impl Parse for MatchElem {
     fn parse(pairs: pest::iterators::Pair<'_, Rule>, ctx: &mut ParseCtx) -> Self {
         let mut inners = pairs.into_inner();
+        ctx.push_scope();
         let pattern: Vec<Pattern> = inners
             .next()
             .unwrap()
@@ -1101,6 +1110,7 @@ impl Parse for MatchElem {
             let body = Stack {
                 elems: action.into_inner().map(|x| Ast::parse(x, ctx)).collect(),
             };
+            ctx.pop_scope();
             MatchElem {
                 pattern,
                 cond,
@@ -1114,11 +1124,13 @@ impl Parse for MatchElem {
                     .map(|x| Ast::parse(x, ctx))
                     .collect(),
             };
+            let cond = Stack {
+                elems: (condition.into_iter().collect()),
+            };
+            ctx.pop_scope();
             MatchElem {
                 pattern,
-                cond: Stack {
-                    elems: (condition.into_iter().collect()),
-                },
+                cond,
                 body,
             }
         }

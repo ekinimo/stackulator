@@ -864,6 +864,8 @@ impl Default for Env {
                                 values.push(list);
                                 if ret.is_some() {
                                     values.push(ret.unwrap());
+                                } else {
+                                    return Err(EvalError::IndexOutOfBounds);
                                 }
                             }
                             _ => unreachable!(),
@@ -1006,7 +1008,7 @@ impl Default for Env {
             ret.protocol_arity.insert(fun, (2, Some(1)));
         }
         {
-            let fun = ctx.insert_fun("push_first");
+            let fun = ctx.insert_fun("push");
             let mut map = HashMap::new();
             map.insert(
                 vec![Type::List, Type::GenericTyp(usize::MAX)],
@@ -1048,10 +1050,10 @@ impl Default for Env {
             );
 
             ret.protocol_data.insert(fun, map);
-            ret.protocol_arity.insert(fun, (0, Some(1)));
+            ret.protocol_arity.insert(fun, (2, Some(1)));
         }
         {
-            let fun = ctx.insert_fun("push");
+            let fun = ctx.insert_fun("push_first");
             let mut map = HashMap::new();
             map.insert(
                 vec![Type::List, Type::GenericTyp(usize::MAX)],
@@ -1095,7 +1097,7 @@ impl Default for Env {
             ret.protocol_arity.insert(fun, (2, Some(1)));
         }
         {
-            let fun = ctx.insert_fun("pop_first");
+            let fun = ctx.insert_fun("pop");
             let mut map = HashMap::new();
             map.insert(
                 vec![Type::List],
@@ -1147,7 +1149,7 @@ impl Default for Env {
             ret.protocol_arity.insert(fun, (1, Some(2)));
         }
         {
-            let fun = ctx.insert_fun("pop");
+            let fun = ctx.insert_fun("pop_first");
             let mut map = HashMap::new();
             map.insert(
                 vec![Type::List],
@@ -1661,6 +1663,100 @@ impl Default for Env {
 
             ret.protocol_data.insert(fun, map);
             ret.protocol_arity.insert(fun, (1, None));
+        }
+
+        {
+            let fun = ctx.insert_fun("i2f");
+            let mut map = HashMap::new();
+            map.insert(
+                vec![Type::Integer],
+                (
+                    vec![Type::Float],
+                    CallType::Fun(Rc::new(|values, _env, _chain_map| {
+                        let a = values.pop().unwrap();
+                        match a {
+                            Values::Int(i) => values.push(Values::Float(Rational::from(i))),
+                            _ => unreachable!(),
+                        }
+                        Ok(())
+                    })),
+                ),
+            );
+            ret.protocol_data.insert(fun, map);
+            ret.protocol_arity.insert(fun, (1, Some(1)));
+        }
+
+        {
+            let fun = ctx.insert_fun("f2i");
+            let mut map = HashMap::new();
+            map.insert(
+                vec![Type::Float],
+                (
+                    vec![Type::Integer],
+                    CallType::Fun(Rc::new(|values, _env, _chain_map| {
+                        let a = values.pop().unwrap();
+                        match a {
+                            Values::Float(f) => {
+                                use malachite::num::conversion::traits::RoundingFrom;
+                                use malachite::rounding_modes::RoundingMode;
+                                let (i, _) =
+                                    malachite::Integer::rounding_from(&f, RoundingMode::Down);
+                                values.push(Values::Int(i));
+                            }
+                            _ => unreachable!(),
+                        }
+                        Ok(())
+                    })),
+                ),
+            );
+            ret.protocol_data.insert(fun, map);
+            ret.protocol_arity.insert(fun, (1, Some(1)));
+        }
+
+        {
+            let fun = ctx.insert_fun("l2s");
+            let mut map = HashMap::new();
+            map.insert(
+                vec![Type::List],
+                (
+                    vec![Type::Set],
+                    CallType::Fun(Rc::new(|values, _env, _chain_map| {
+                        let a = values.pop().unwrap();
+                        match a {
+                            Values::List(l) => {
+                                values.push(Values::Set(l.into_iter().collect()));
+                            }
+                            _ => unreachable!(),
+                        }
+                        Ok(())
+                    })),
+                ),
+            );
+            ret.protocol_data.insert(fun, map);
+            ret.protocol_arity.insert(fun, (1, Some(1)));
+        }
+
+        {
+            let fun = ctx.insert_fun("s2l");
+            let mut map = HashMap::new();
+            map.insert(
+                vec![Type::Set],
+                (
+                    vec![Type::List],
+                    CallType::Fun(Rc::new(|values, _env, _chain_map| {
+                        let a = values.pop().unwrap();
+                        match a {
+                            Values::Set(s) => {
+                                values.push(Values::List(s.into_iter().collect()));
+                            }
+                            _ => unreachable!(),
+                        }
+                        Ok(())
+                    })),
+                ),
+            );
+            ret.protocol_data.insert(fun, map);
+            ret.protocol_arity.insert(fun, (1, Some(1)));
         }
         ret
     }

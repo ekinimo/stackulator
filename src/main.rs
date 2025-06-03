@@ -743,10 +743,10 @@ fn Examples(content: Signal<String>) -> Element {
         (
             "Take Operations",
             vec![
-                ("Simple Take", "5 10 |_x _y| { _x _y add }"),
-                ("Multiple Values", "1 2 3 |_a _b _c| { _c _b _a }"),
-                ("Variable Reuse", "42 |_x| { _x _x _x }"),
-                ("Nested Take", "1 2 |_x _y| { _x |_z| { _z _y add } }"),
+                ("Simple Take", "5 10 |x y| { x y add }"),
+                ("Multiple Values", "1 2 3 |a b c| { c b a }"),
+                ("Variable Reuse", "42 |x| { x x x }"),
+                ("Nested Take", "1 2 |x y| { x |z| { z y add } }"),
             ],
         ),
         (
@@ -754,7 +754,7 @@ fn Examples(content: Signal<String>) -> Element {
             vec![
                 ("Create List", "List(1 2 3 4)"),
                 ("List Operations", "List(1 2 3) 4 push"),
-                ("List with Variables", "5 10 |_x _y| { List(_x _y _x) }"),
+                ("List with Variables", "5 10 |x y| { List(x y x) }"),
                 ("Create Set", "Set(1 2 3 2)"),
                 ("Set Operations", "Set(1 2) Set(2 3) union"),
                 ("List Access", "List(10 20 30) 1 get"),
@@ -763,25 +763,25 @@ fn Examples(content: Signal<String>) -> Element {
         (
             "Functions",
             vec![
-                ("Simple Function", "dup = |_x| {_x _x};"),
+                ("Simple Function", "dup = |x| {x x};"),
                 ("Using Function", "5 dup"),
-                ("Swap Function", "swap = |_x _y| {_y _x};\n1 2 swap"),
-                ("Drop Function", "drop = |_x| {};\n42 drop"),
-                ("Over Function", "over = |_x _y| {_y _x _y};\n1 2 over"),
+                ("Swap Function", "swap = |x y| {y x};\n1 2 swap"),
+                ("Drop Function", "drop = |x| {};\n42 drop"),
+                ("Over Function", "over = |x y| {y x y};\n1 2 over"),
             ],
         ),
         (
             "Pattern Matching",
             vec![
-                ("Simple Match", "5 | _x => _x 2 add,"),
-                ("Literal Match", "7 | 5 => true,\n  | _x => false,"),
-                ("List Pattern", "List(1 2 3) | List(_x _y _z) => _x _y add,"),
-                ("Rest Pattern", "List(1 2 3 4) | List(_x $_rest) => _rest,"),
+                ("Simple Match", "5 | x => x 2 add,"),
+                ("Literal Match", "7 | 5 => true,\n  | x => false,"),
+                ("List Pattern", "List(1 2 3) | List(x y z) => x y add,"),
+                ("Rest Pattern", "List(1 2 3 4) | List(x $rest) => rest,"),
                 (
                     "Middle Pattern",
-                    "List(1 2 3 4 5) | List(_first $_middle _last) => _middle,",
+                    "List(1 2 3 4 5) | List(first $middle last) => middle,",
                 ),
-                //("Set Pattern", "Set(1 2 3) | Set(_x $_rest) => _x,"),
+                ("Set Pattern", "Set(1 2 3) | Set(x $rest) => x,"),
                 (
                     "Type Patterns",
                     "42 | Int(_) => true, 42.0 | Rat(_) => false,",
@@ -806,7 +806,7 @@ fn Examples(content: Signal<String>) -> Element {
                 ("Struct Usage", "struct Point { Int Int };\nPoint(10 20);"),
                 (
                     "Struct Pattern",
-                    "struct Point { Int Int };\nPoint(5 10) | Point(_x _y) => _x _y add,",
+                    "struct Point { Int Int };\nPoint(5 10) | Point(x y) => x y add,",
                 ),
                 (
                     "Enum Definition",
@@ -818,7 +818,7 @@ fn Examples(content: Signal<String>) -> Element {
                 ),
                 (
                     "Enum Pattern",
-                    "enum Option { | Some('T) | None() };\nOption::Some(42) | Option::Some(_x) => _x,",
+                    "enum Option { | Some('T) | None() };\nOption::Some(42) | Option::Some(x) => x,",
                 ),
             ],
         ),
@@ -833,7 +833,7 @@ fn Examples(content: Signal<String>) -> Element {
                     "Defining addition on a custom Type",
                     "struct Dummy{Int} ;
 
-add(Dummy Dummy) = | Dummy(_x) Dummy(_y) => Dummy(_x _y add), ;
+add(Dummy Dummy) = | Dummy(x) Dummy(y) => Dummy(x y add), ;
 
 Dummy(1) Dummy(2) add;",
                 ),
@@ -843,21 +843,21 @@ Dummy(1) Dummy(2) add;",
             "Algorithms",
             vec![(
                 "Fibonacci",
-                "drop = |_x| {};
+                "drop = |x| {};
 
-drop2 = |_x _y| { };
+drop2 = |x y| { };
 
-dup = |_x| {_x _x} ;
+dup = |x| {x x} ;
 
-swap = |_x _y|{ _y _x};
+swap = |x y|{ y x};
 
-fib_step = | _x _y _z |{
-  _x _y add
-  _x
-  _z 1 sub
+fib_step = | x y z |{
+  x y add
+  x
+  z 1 sub
  };
 
-fib = | _n |{ 1 1 _n }
+fib = | n |{ 1 1 n }
       while dup 1 eq not{
           fib_step
       }

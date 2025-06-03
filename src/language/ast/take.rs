@@ -66,6 +66,7 @@ impl Parse for Take {
     fn parse(pairs: pest::iterators::Pair<'_, Rule>, ctx: &mut ParseCtx) -> Self {
         let mut inners = pairs.into_inner();
         let vars = inners.next().unwrap();
+        ctx.push_scope();
         let vars = match vars.as_rule() {
             Rule::takeVars => vars
                 .into_inner()
@@ -84,6 +85,7 @@ impl Parse for Take {
             },
             _ => unreachable!(),
         };
+        ctx.pop_scope();
         Take { vars, body }
     }
 }
