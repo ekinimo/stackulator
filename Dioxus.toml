@@ -3,6 +3,7 @@ name = "stackulator"
 
 [web.app]
 title = "Stackulator"
+base_path = "stackulator"
 
 [web.watcher]
 
