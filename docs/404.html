@@ -5,14 +5,14 @@
     <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta charset="UTF-8" />
-  <link rel="preload" as="script" href="/./assets/stackulator-96c1951bda623088.js" crossorigin><link rel="preload" as="fetch" type="application/wasm" href="/./assets/stackulator_bg-9363bbdcb3256147.wasm" crossorigin></head>
+  <link rel="preload" as="script" href="/stackulator/assets/stackulator-96c1951bda623088.js" crossorigin><link rel="preload" as="fetch" type="application/wasm" href="/stackulator/assets/stackulator_bg-449b08a4ebd2732f.wasm" crossorigin></head>
   <body>
     <div id="main"></div>
   <script>
             // We can't use a module script here because we need to start the script immediately when streaming
-            import("/./assets/stackulator-96c1951bda623088.js").then(
+            import("/stackulator/assets/stackulator-96c1951bda623088.js").then(
                 ({ default: init }) => {
-                init("/./assets/stackulator_bg-9363bbdcb3256147.wasm").then((wasm) => {
+                init("/stackulator/assets/stackulator_bg-449b08a4ebd2732f.wasm").then((wasm) => {
                     if (wasm.__wbindgen_start == undefined) {
                     wasm.main();
                     }
